@@ -4,7 +4,6 @@ pragma solidity ^0.8.9;
 // Tasks
 // - fetch current price
 // - calculate ticks
-// - findTick
 // - mintPosition
 // - burnPosition
 
