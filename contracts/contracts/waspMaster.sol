@@ -9,6 +9,8 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 // import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface1_2.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 
 // import "@uniswap/v3-periphery/contracts/base/LiquidityManagement.sol";
 
@@ -18,17 +20,95 @@ import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 // - mintPositionz
 // - burnPosition
 
+interface KeeperRegistrarInterface {
+    function register(
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        bytes calldata checkData,
+        uint96 amount,
+        uint8 source,
+        address sender
+    ) external;
+}
+
 contract waspMaster is IUniswapV3Pool {
     IUniswapV3Factory public override factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
     uint public tokenId;
 
-    constructor(address _factory, address _positionManager) {
+    // *********** Chainlink Automation *********** //
+
+    LinkTokenInterface public immutable i_link;
+    address public immutable registrar;
+    AutomationRegistryInterface public immutable i_registry;
+    bytes4 registerSig = KeeperRegistrarInterface.register.selector;
+
+    constructor(address _factory, address _positionManager, LinkTokenInterface _link,
+        address _registrar,
+        AutomationRegistryInterface _registry) {
         factory = IUniswapV3Factory(_factory);
         nonfungiblePositionManager = INonfungiblePositionManager(
             _positionManager
         );
+        i_link = _link;
+        registrar = _registrar;
+        i_registry = _registry;
     }
+
+    // registry add. for sepolia: 0xE16Df59B887e3Caa439E0b29B42bA2e7976FD8b2
+    // registrar add. for sepolia: 0x9a811502d843E5a03913d5A2cfb646c11463467A
+
+    function registerAndPredictID(
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        bytes calldata checkData,
+        uint96 amount,
+        uint8 source
+    ) public {
+        (State memory state, , ) = i_registry.getState();
+        uint256 oldNonce = state.nonce;
+        bytes memory payload = abi.encode(
+            name,
+            encryptedEmail,
+            upkeepContract,
+            gasLimit,
+            adminAddress,
+            checkData,
+            amount,
+            source,
+            address(this)
+        );
+
+        i_link.transferAndCall(
+            registrar,
+            amount,
+            bytes.concat(registerSig, payload)
+        );
+        (state, , ) = i_registry.getState();
+        uint256 newNonce = state.nonce;
+        if (newNonce == oldNonce + 1) {
+            uint256 upkeepID = uint256(
+                keccak256(
+                    abi.encodePacked(
+                        blockhash(block.number - 1),
+                        address(i_registry),
+                        uint32(oldNonce)
+                    )
+                )
+            );
+            // DEV - Use the upkeepID however you see fit
+        } else {
+            revert("auto-approve disabled");
+        }
+    }
+
+    // ***********       ***********           *********** //
 
     function getPrice(
         address tokenIn,
