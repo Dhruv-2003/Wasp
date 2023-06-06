@@ -16,7 +16,18 @@ import "./waspMaster.sol";
 contract WaspWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
-    uint public tokenId;
+    struct positionData {
+        uint256 tokenId;
+        uint128 liquidity;
+        int24 lowerTick;
+        int24 upperTick;
+        uint256 liqAmount0;
+        uint256 liqAmount1;
+        uint256 fees0;
+        uint256 fees1;
+    }
+
+    positionData public _position;
 
     waspMaster.CLMOrder public _clmOrder;
 
@@ -132,20 +143,6 @@ contract WaspWallet is AutomationCompatibleInterface {
             fee
         );
 
-        // transfer tokens to contract
-        TransferHelper.safeTransferFrom(
-            _tokenIn,
-            msg.sender,
-            address(this),
-            _amount0
-        );
-        TransferHelper.safeTransferFrom(
-            _tokenOut,
-            msg.sender,
-            address(this),
-            _amount1
-        );
-
         // Approve the position manager
         TransferHelper.safeApprove(
             _tokenIn,
@@ -157,14 +154,6 @@ contract WaspWallet is AutomationCompatibleInterface {
             address(nonfungiblePositionManager),
             _amount1
         );
-
-        // (uint256 amount0, uint256 amount1) = IUniswapV3PoolActions.mint(
-        //     owner,
-        //     _tickLower,
-        //     _tickUpper,
-        //     _amount,
-        //     _data
-        // );
 
         INonfungiblePositionManager.MintParams
             memory params = INonfungiblePositionManager.MintParams({
@@ -182,7 +171,46 @@ contract WaspWallet is AutomationCompatibleInterface {
             });
 
         (tokenId, , amount0, amount1) = nonfungiblePositionManager.mint(params);
+
+        _position = positionData({
+            tokenId: tokenId,
+            liquidity: 0,
+            lowerTick: _tickLower,
+            upperTick: _tickUpper,
+            liqAmount0: (_position.liqAmount0 + amount0),
+            liqAmount1: (_position.liqAmount1 + amount1),
+            fees0: 0,
+            fees1: 0
+        });
         return (amount0, amount1);
+    }
+
+    function decreaseLiquidityInHalf()
+        external
+        returns (uint256 amount0, uint256 amount1)
+    {
+        // caller must be the owner of the NFT
+        // require(msg.sender == deposits[tokenId].owner, "Not the owner");
+        // get liquidity data for tokenId
+
+        // amount0Min and amount1Min are price slippage checks
+        // if the amount received after burning is not greater than these minimums, transaction will fail
+        INonfungiblePositionManager.DecreaseLiquidityParams
+            memory params = INonfungiblePositionManager
+                .DecreaseLiquidityParams({
+                    tokenId: _position.tokenId,
+                    liquidity: 0, // decreasing it to 0
+                    amount0Min: 0,
+                    amount1Min: 0,
+                    deadline: block.timestamp
+                });
+
+        (amount0, amount1) = nonfungiblePositionManager.decreaseLiquidity(
+            params
+        );
+
+        //send liquidity back to owner
+        _sendToOwner(tokenId, amount0, amount1);
     }
 
     //Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
