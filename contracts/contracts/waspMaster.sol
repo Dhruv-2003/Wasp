@@ -16,15 +16,18 @@ pragma solidity ^0.8.14;
 
 // ## Tasks
 // - createCLMOrder
-//
+// - cancelCLMOrder
+// - registerUpkeep
+// - cancelUpkeep
+// - getUpkeep
 
 import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface1_2.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
-import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
+import "./interface/IWaspEx.sol";
 
 interface KeeperRegistrarInterface {
+    // mapping( )
     function register(
         string memory name,
         bytes calldata encryptedEmail,
@@ -38,8 +41,34 @@ interface KeeperRegistrarInterface {
     ) external;
 }
 
-abstract contract waspMaster is AutomationCompatibleInterface, WaspEx {
-    // *********** Chainlink Automation *********** //
+abstract contract waspMaster {
+    /*///////////////////////////////////////////////////////////////
+                          Mapping
+    //////////////////////////////////////////////////////////////*/
+
+    struct CLMOrder {
+        address owner;
+        address token0;
+        address token1;
+        uint liqAmount0;
+        uint liqAmount1;
+        uint24 fee;
+        uint256 tokenId;
+        uint256 cretionTimestamp;
+        int24 upperTick;
+        int24 lowerTick;
+        address waspWallet;
+    }
+    uint public totalCLMOrders;
+    mapping(uint => CLMOrder) public clmOrders;
+
+    /*///////////////////////////////////////////////////////////////
+                           IwaspEx interface
+    //////////////////////////////////////////////////////////////*/
+
+    IWaspEx public immutable exchangeRouter;
+
+    // *********** Chainlink Automation Variables *********** //
 
     LinkTokenInterface public immutable i_link;
     address public immutable registrar;
@@ -49,13 +78,16 @@ abstract contract waspMaster is AutomationCompatibleInterface, WaspEx {
     constructor(
         LinkTokenInterface _link,
         address _registrar,
-        AutomationRegistryInterface _registry
+        AutomationRegistryInterface _registry,
+        address _waspEx
     ) {
         i_link = _link;
         registrar = _registrar;
         i_registry = _registry;
+        exchangeRouter = IWaspEx(_waspEx);
     }
 
+    // *********** Chainlink Automation Functions *********** //
     // registry add. for sepolia: 0xE16Df59B887e3Caa439E0b29B42bA2e7976FD8b2
     // registrar add. for sepolia: 0x9a811502d843E5a03913d5A2cfb646c11463467A
 
@@ -103,42 +135,6 @@ abstract contract waspMaster is AutomationCompatibleInterface, WaspEx {
             // DEV - Use the upkeepID however you see fit
         } else {
             revert("auto-approve disabled");
-        }
-    }
-
-    function checkUpKeep(
-        bytes calldata checkData, address _tokenIn,
-        address _tokenOut,
-        uint24 fee
-    ) external view returns (bool upkeepNeeded, bytes memory performData) {
-        checkConditions(_tokenIn,_tokenOut, fee);
-    }
-
-    function performUpkeep(bytes calldata performData) external {
-        burnPosition();
-        collectAllFees();
-    }
-
-    uint160 public _newprice;
-    int24 public _newtick;
-    int24 public _upperTick;
-    int24 public _lowerTick;
-
-    function checkConditions(address _tokenIn,
-        address _tokenOut,
-        uint24 fee) view internal returns (bool){
-        (uint160 _newprice, int24 _newtick ) = getPrice(_tokenIn,_tokenOut, fee);
-        // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
-
-        // Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio
-        // The greatest tick for which the ratio is less than or equal to the input ratio
-        _upperTick = TickMath.getTickAtSqrtRatio(_newprice);
-        _lowerTick = _upperTick - (_newtick + 500);  // can also be directly 1000
-        require(_lowerTick < _upperTick);
-        if( _lowerTick <= _newtick <= _upperTick ){
-            return false;
-        }else{
-            return true;
         }
     }
 }

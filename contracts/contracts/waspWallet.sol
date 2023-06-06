@@ -1,32 +1,89 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.8.14;
 
-import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
-import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
-// import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
-// import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-// import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import "./waspMaster.sol";
 
-// import "@uniswap/v3-periphery/contracts/base/LiquidityManagement.sol";
+// - checkUpkeep
+// - performUpkeep
+// - mint
+// - collect
+// - burn
+// - withdraw
+// - deposit
 
-// Convert the functions in such a way that they can be called out by Master contract
-// Fees collection
-// Send to owner fees
-// Increase and decrease liquidity
-contract WaspEx {
+contract WaspEx is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
     uint public tokenId;
 
-    constructor(address _factory, address _positionManager) {
+    waspMaster.CLMOrder public _clmOrder;
+
+    constructor(
+        address _factory,
+        address _positionManager,
+        waspMaster.CLMOrder memory clmOrder
+    ) {
         factory = IUniswapV3Factory(_factory);
         nonfungiblePositionManager = INonfungiblePositionManager(
             _positionManager
         );
+        _clmOrder = clmOrder;
     }
+
+    /*///////////////////////////////////////////////////////////////
+                          Chainlink Automation
+    //////////////////////////////////////////////////////////////*/
+
+    function checkUpKeep()
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        upkeepNeeded = checkConditions(
+            _clmOrder.token0,
+            _clmOrder.token1,
+            _clmOrder.fee
+        );
+        performData = checkData;
+    }
+
+    function performUpkeep(bytes calldata performData) external override {
+        burnPosition();
+        collectAllFees();
+        /// mint new position
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                           Extrass
+    //////////////////////////////////////////////////////////////*/
+
+    function checkConditions(
+        address _tokenIn,
+        address _tokenOut,
+        uint24 fee
+    ) internal view returns (bool) {
+        (uint160 _newprice, int24 _newtick) = exchangeRouter.getPrice(
+            _tokenIn,
+            _tokenOut,
+            fee
+        );
+        // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
+
+        // Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio
+        // The greatest tick for which the ratio is less than or equal to the input ratio
+        require(_lowerTick < _upperTick);
+        if (_lowerTick <= _newtick <= _upperTick) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                           Uniswap functions
+    //////////////////////////////////////////////////////////////*/
 
     function getPrice(
         address tokenIn,
@@ -153,4 +210,67 @@ contract WaspEx {
         // send collected feed back to owner
         _sendToOwner(tokenId, amount0, amount1);
     }
+}
+
+interface IUniswapV3Factory {
+    function getPool(
+        address tokenA,
+        address tokenB,
+        uint24 fee
+    ) external view returns (address pool);
+}
+
+interface IUniswapV3Pool {
+    function slot0()
+        external
+        view
+        returns (
+            uint160 sqrtPriceX96,
+            int24 tick,
+            uint16 observationIndex,
+            uint16 observationCardinality,
+            uint16 observationCardinalityNext,
+            uint8 feeProtocol,
+            bool unlocked
+        );
+}
+
+interface INonfungiblePositionManager {
+    struct MintParams {
+        address token0;
+        address token1;
+        uint24 fee;
+        int24 tickLower;
+        int24 tickUpper;
+        uint256 amount0Desired;
+        uint256 amount1Desired;
+        uint256 amount0Min;
+        uint256 amount1Min;
+        address recipient;
+        uint256 deadline;
+    }
+
+    struct CollectParams {
+        uint256 tokenId;
+        address recipient;
+        uint128 amount0Max;
+        uint128 amount1Max;
+    }
+
+    function mint(
+        MintParams memory params
+    )
+        external
+        returns (
+            uint256 tokenId,
+            uint128 liquidity,
+            uint256 amount0,
+            uint256 amount1
+        );
+
+    function collect(
+        CollectParams memory params
+    ) external returns (uint256 amount0, uint256 amount1);
+
+    function burn(uint256 tokenId) external;
 }
