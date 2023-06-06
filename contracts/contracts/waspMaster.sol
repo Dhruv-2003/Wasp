@@ -12,7 +12,6 @@ import '@uniswap/v3-periphery/contracts/base/LiquidityManagement.sol';
 // Tasks
 // - fetch current price
 // - calculate ticks
-// - findTick
 // - mintPosition
 // - burnPosition
 
