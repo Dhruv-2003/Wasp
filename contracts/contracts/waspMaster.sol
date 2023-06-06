@@ -108,6 +108,15 @@ contract waspMaster is IUniswapV3Pool {
         }
     }
 
+    function checkUpKeep(bytes calldata checkData) external view override returns(bool upkeepNeeded, bytes memory performData){
+
+    }
+
+    function performUpkeep(bytes calldata performData) external override {
+        
+    }
+
+
     // ***********       ***********           *********** //
 
     function getPrice(
