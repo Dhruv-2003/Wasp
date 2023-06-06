@@ -50,9 +50,12 @@ contract WaspEx is AutomationCompatibleInterface {
     }
 
     function performUpkeep(bytes calldata performData) external override {
-        burnPosition();
+        require(_clmOrder.tokenId != 0);
+        burnPosition(_clmOrder.tokenId);
         collectAllFees();
         /// mint new position
+        mintPosition(_clmOrder.token0,_clmOrder.token1,_clmOrder.fee, _clmOrder.owner, _clmOrder.liqAmount0, _clmOrder.liqAmount1);
+        totalCLMOrders += 1 ;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -70,9 +73,6 @@ contract WaspEx is AutomationCompatibleInterface {
             fee
         );
         // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
-
-        // Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio
-        // The greatest tick for which the ratio is less than or equal to the input ratio
         require(_lowerTick < _upperTick);
         if (_lowerTick <= _newtick <= _upperTick) {
             return false;
@@ -185,8 +185,8 @@ contract WaspEx is AutomationCompatibleInterface {
     }
 
     //Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
-    function burnPosition() external payable {
-        nonfungiblePositionManager.burn(tokenId);
+    function burnPosition(uint256 _tokenId) external payable {
+        nonfungiblePositionManager.burn(_clmOrder.tokenId);
     }
 
     function collectAllFees()
@@ -199,7 +199,7 @@ contract WaspEx is AutomationCompatibleInterface {
         // alternatively can set recipient to msg.sender and avoid another transaction in `sendToOwner`
         INonfungiblePositionManager.CollectParams
             memory params = INonfungiblePositionManager.CollectParams({
-                tokenId: tokenId,
+                tokenId: _clmOrder.tokenId,
                 recipient: address(this),
                 amount0Max: type(uint128).max,
                 amount1Max: type(uint128).max
