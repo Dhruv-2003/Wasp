@@ -2,6 +2,7 @@
 pragma solidity ^0.8.14;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./waspMaster.sol";
 
 // - checkUpkeep
@@ -12,7 +13,7 @@ import "./waspMaster.sol";
 // - withdraw
 // - deposit
 
-contract WaspEx is AutomationCompatibleInterface {
+contract WaspWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
     uint public tokenId;

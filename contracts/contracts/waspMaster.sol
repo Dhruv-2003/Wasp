@@ -19,12 +19,14 @@ pragma solidity ^0.8.14;
 // - cancelCLMOrder
 // - registerUpkeep
 // - cancelUpkeep
-// - getUpkeep
+// - getOrder
 
 import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface1_2.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
-import "./interface/IWaspEx.sol";
+import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+// import "./interface/IWaspEx.sol";
+import "./waspWallet.sol";
 
 interface KeeperRegistrarInterface {
     // mapping( )
@@ -41,32 +43,77 @@ interface KeeperRegistrarInterface {
     ) external;
 }
 
-abstract contract waspMaster {
+contract waspMaster {
     /*///////////////////////////////////////////////////////////////
-                          Mapping
+                          Mapping &  State Variables
     //////////////////////////////////////////////////////////////*/
 
     struct CLMOrder {
         address owner;
         address token0;
         address token1;
-        uint liqAmount0;
-        uint liqAmount1;
+        uint amount0;
+        uint amount1;
         uint24 fee;
         uint256 tokenId;
         uint256 cretionTimestamp;
-        int24 upperTick;
-        int24 lowerTick;
         address waspWallet;
     }
     uint public totalCLMOrders;
     mapping(uint => CLMOrder) public clmOrders;
 
     /*///////////////////////////////////////////////////////////////
-                           IwaspEx interface
+                           Main functions
     //////////////////////////////////////////////////////////////*/
 
-    IWaspEx public immutable exchangeRouter;
+    function createCLMOrder(
+        address token0,
+        address token1,
+        uint amount0,
+        uint amount1,
+        uint24 fee
+    ) external returns (uint clmOrderId) {
+        totalCLMOrders += 1;
+        clmOrderId = totalCLMOrders;
+        // Approval needs to be given to the master contract for token Usage
+
+        CLMOrder memory _clmOrder = CLMOrder({
+            owner: msg.sender,
+            token0: token0,
+            token1: token1,
+            amount0: amount0,
+            amoun1: amount1,
+            fee: fee,
+            tokenId: 0,
+            creationTimestamp: block.timestamp,
+            waspWallet: address(0)
+        });
+
+        WaspWallet _waspWallet = new WaspWallet();
+
+        _clmOrder.waspWallet = address(_waspWallet);
+
+        // transfer the tokens to waspWallet directly
+        TransferHelper.safeTransferFrom(
+            token0,
+            msg.sender,
+            address(_waspWallet),
+            amount0
+        );
+
+        TransferHelper.safeTransferFrom(
+            token1,
+            msg.sender,
+            address(_waspWallet),
+            amount1
+        );
+
+        // Now Mint the new position for the current tick
+
+        // Create the Registery upkeep
+
+        clmOrders[clmOrderId] = _clmOrder;
+    }
 
     // *********** Chainlink Automation Variables *********** //
 
