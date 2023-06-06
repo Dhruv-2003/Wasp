@@ -22,6 +22,7 @@ import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/s
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 
 interface KeeperRegistrarInterface {
     function register(
@@ -37,7 +38,7 @@ interface KeeperRegistrarInterface {
     ) external;
 }
 
-abstract contract waspMaster is AutomationCompatibleInterface {
+abstract contract waspMaster is AutomationCompatibleInterface, WaspEx {
     // *********** Chainlink Automation *********** //
 
     LinkTokenInterface public immutable i_link;
@@ -106,8 +107,38 @@ abstract contract waspMaster is AutomationCompatibleInterface {
     }
 
     function checkUpKeep(
-        bytes calldata checkData
-    ) external view returns (bool upkeepNeeded, bytes memory performData) {}
+        bytes calldata checkData, address _tokenIn,
+        address _tokenOut,
+        uint24 fee
+    ) external view returns (bool upkeepNeeded, bytes memory performData) {
+        checkConditions(_tokenIn,_tokenOut, fee);
+    }
 
-    function performUpkeep(bytes calldata performData) external {}
+    function performUpkeep(bytes calldata performData) external {
+        burnPosition();
+        collectAllFees();
+    }
+
+    uint160 public _newprice;
+    int24 public _newtick;
+    int24 public _upperTick;
+    int24 public _lowerTick;
+
+    function checkConditions(address _tokenIn,
+        address _tokenOut,
+        uint24 fee) view internal returns (bool){
+        (uint160 _newprice, int24 _newtick ) = getPrice(_tokenIn,_tokenOut, fee);
+        // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
+
+        // Calculates the greatest tick value such that getRatioAtTick(tick) <= ratio
+        // The greatest tick for which the ratio is less than or equal to the input ratio
+        _upperTick = TickMath.getTickAtSqrtRatio(_newprice);
+        _lowerTick = _upperTick - (_newtick + 500);  // can also be directly 1000
+        require(_lowerTick < _upperTick);
+        if( _lowerTick <= _newtick <= _upperTick ){
+            return false;
+        }else{
+            return true;
+        }
+    }
 }

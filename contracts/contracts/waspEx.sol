@@ -151,6 +151,6 @@ contract WaspEx {
         (amount0, amount1) = nonfungiblePositionManager.collect(params);
 
         // send collected feed back to owner
-        // _sendToOwner(tokenId, amount0, amount1);
+        _sendToOwner(tokenId, amount0, amount1);
     }
 }
