@@ -16,7 +16,7 @@ import "./waspMaster.sol";
 contract WaspWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
-    struct positionData {
+    struct PositionData {
         uint256 tokenId;
         uint128 liquidity;
         int24 lowerTick;
@@ -25,9 +25,12 @@ contract WaspWallet is AutomationCompatibleInterface {
         uint256 liqAmount1;
         uint256 fees0;
         uint256 fees1;
+        bool currentPositionBurnt;
+        bool currentFeesCollected;
+        bool currentLiqReduced;
     }
 
-    positionData public _position;
+    PositionData public _position;
 
     waspMaster.CLMOrder public _clmOrder;
 
@@ -63,11 +66,18 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     function performUpkeep(bytes calldata performData) external override {
         require(_clmOrder.tokenId != 0);
-        burnPosition(_clmOrder.tokenId);
+        burnPosition();
         collectAllFees();
         /// mint new position
-        mintPosition(_clmOrder.token0,_clmOrder.token1,_clmOrder.fee, _clmOrder.owner, _clmOrder.liqAmount0, _clmOrder.liqAmount1);
-        totalCLMOrders += 1 ;
+        mintPosition(
+            _clmOrder.token0,
+            _clmOrder.token1,
+            _clmOrder.fee,
+            _clmOrder.owner,
+            _clmOrder.liqAmount0,
+            _clmOrder.liqAmount1
+        );
+        totalCLMOrders += 1;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -135,8 +145,11 @@ contract WaspWallet is AutomationCompatibleInterface {
         address owner,
         uint256 _amount0,
         uint256 _amount1
-    ) external payable returns (uint256 amount0, uint256 amount1) {
-        // require(_amount != 0);
+    )
+        external
+        payable
+        returns (uint256 tokenId, uint256 amount0, uint256 amount1)
+    {
         (int24 _tickLower, int24 _tickUpper) = getRangeTicks(
             _tokenIn,
             _tokenOut,
@@ -166,26 +179,31 @@ contract WaspWallet is AutomationCompatibleInterface {
                 amount1Desired: _amount1,
                 amount0Min: 0,
                 amount1Min: 0,
-                recipient: owner,
+                recipient: address(this), // tokens will be sent back to this contract only
                 deadline: block.timestamp
             });
 
-        (tokenId, , amount0, amount1) = nonfungiblePositionManager.mint(params);
+        uint128 liquidity;
+        (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager
+            .mint(params);
 
         _position = positionData({
             tokenId: tokenId,
-            liquidity: 0,
+            liquidity: liquidity,
             lowerTick: _tickLower,
             upperTick: _tickUpper,
             liqAmount0: (_position.liqAmount0 + amount0),
             liqAmount1: (_position.liqAmount1 + amount1),
-            fees0: 0,
-            fees1: 0
+            fees0: (_position.fees0),
+            fees1: (_position.fees1),
+            currentPositionBurnt: false,
+            currentFeesCollected: false,
+            currentLiqReduced: false
         });
         return (amount0, amount1);
     }
 
-    function decreaseLiquidityInHalf()
+    function decreaseLiquidity()
         external
         returns (uint256 amount0, uint256 amount1)
     {
@@ -209,13 +227,8 @@ contract WaspWallet is AutomationCompatibleInterface {
             params
         );
 
-        //send liquidity back to owner
-        _sendToOwner(tokenId, amount0, amount1);
-    }
-
-    //Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
-    function burnPosition(uint256 _tokenId) external payable {
-        nonfungiblePositionManager.burn(_clmOrder.tokenId);
+        _position.currentLiqReduced = true;
+        // amount 0 and amount 1 are the amounts refunded by the pool
     }
 
     function collectAllFees()
@@ -226,18 +239,34 @@ contract WaspWallet is AutomationCompatibleInterface {
 
         // set amount0Max and amount1Max to uint256.max to collect all fees
         // alternatively can set recipient to msg.sender and avoid another transaction in `sendToOwner`
+        // sent to owner itself
         INonfungiblePositionManager.CollectParams
             memory params = INonfungiblePositionManager.CollectParams({
-                tokenId: _clmOrder.tokenId,
-                recipient: address(this),
+                tokenId: _position.tokenId,
+                recipient: _clmOrder.owner,
                 amount0Max: type(uint128).max,
                 amount1Max: type(uint128).max
             });
 
         (amount0, amount1) = nonfungiblePositionManager.collect(params);
 
-        // send collected feed back to owner
-        _sendToOwner(tokenId, amount0, amount1);
+        _position.fees0 = _position.fees0 + amount0;
+        _position.fees1 = _position.fees1 + amount1;
+
+        _position.currentFeesCollected = true;
+    }
+
+    //Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
+    // Only executed once the positions is reduces to 0 and fees collected (check)
+    function burnPosition() external payable {
+        nonfungiblePositionManager.burn(_position.tokenId);
+
+        _position.currentPositionBurnt = true;
+    }
+
+    function _sendToOwner(uint256 amount0, uint256 amount1) internal {
+        TransferHelper.safeTransfer(_position.token0, _clmOrder.owner, amount0);
+        TransferHelper.safeTransfer(_position.token1, _clmOrder.owner, amount1);
     }
 }
 
@@ -278,6 +307,22 @@ interface INonfungiblePositionManager {
         address recipient;
         uint256 deadline;
     }
+    struct IncreaseLiquidityParams {
+        uint256 tokenId;
+        uint256 amount0Desired;
+        uint256 amount1Desired;
+        uint256 amount0Min;
+        uint256 amount1Min;
+        uint256 deadline;
+    }
+
+    struct DecreaseLiquidityParams {
+        uint256 tokenId;
+        uint128 liquidity;
+        uint256 amount0Min;
+        uint256 amount1Min;
+        uint256 deadline;
+    }
 
     struct CollectParams {
         uint256 tokenId;
@@ -296,6 +341,14 @@ interface INonfungiblePositionManager {
             uint256 amount0,
             uint256 amount1
         );
+
+    function increaseLiquidity(
+        IncreaseLiquidityParams params
+    ) external returns (uint128 liquidity, uint256 amount0, uint256 amount1);
+
+    function decreaseLiquidity(
+        DecreaseLiquidityParams params
+    ) external returns (uint256 amount0, uint256 amount1);
 
     function collect(
         CollectParams memory params
