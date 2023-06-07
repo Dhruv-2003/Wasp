@@ -19,28 +19,32 @@ pragma solidity ^0.8.14;
 // - cancelCLMOrder
 // - registerUpkeep
 // - cancelUpkeep
+// - addFunds
+// - withdraw funds
 // - getOrder
 
 import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface1_2.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-// import "./interface/IWaspEx.sol";
+
 import "./waspWallet.sol";
 
+struct RegistrationParams {
+    string name;
+    bytes encryptedEmail;
+    address upkeepContract;
+    uint32 gasLimit;
+    address adminAddress;
+    bytes checkData;
+    bytes offchainConfig;
+    uint96 amount;
+}
+
 interface KeeperRegistrarInterface {
-    // mapping( )
-    function register(
-        string memory name,
-        bytes calldata encryptedEmail,
-        address upkeepContract,
-        uint32 gasLimit,
-        address adminAddress,
-        bytes calldata checkData,
-        uint96 amount,
-        uint8 source,
-        address sender
-    ) external;
+    function registerUpkeep(
+        RegistrationParams calldata requestParams
+    ) external returns (uint256);
 }
 
 contract waspMaster {
@@ -56,11 +60,38 @@ contract waspMaster {
         uint amount1;
         uint24 fee;
         uint256 tokenId;
+        uint256 upkeepId;
         uint256 cretionTimestamp;
         address waspWallet;
     }
     uint public totalCLMOrders;
     mapping(uint => CLMOrder) public clmOrders;
+
+    address public factory;
+    address public positionManager;
+
+    // *********** Chainlink Automation Variables *********** //
+
+    LinkTokenInterface public immutable i_link;
+    // address public immutable registrar;
+    AutomationRegistryInterface public immutable i_registry;
+
+    // bytes4 registerSig = KeeperRegistrarInterface.register.selector;
+
+    constructor(
+        address _factory,
+        address _positionManager,
+        LinkTokenInterface _link,
+        AutomationRegistryInterface _registry,
+        address _waspEx
+    ) {
+        factory = _factory;
+        positionManager = _positionManager;
+        i_link = _link;
+        // registrar = _registrar;
+        i_registry = _registry;
+        exchangeRouter = IWaspEx(_waspEx);
+    }
 
     /*///////////////////////////////////////////////////////////////
                            Main functions
@@ -71,7 +102,8 @@ contract waspMaster {
         address token1,
         uint amount0,
         uint amount1,
-        uint24 fee
+        uint24 fee,
+        uint linkAmount
     ) external returns (uint clmOrderId) {
         totalCLMOrders += 1;
         clmOrderId = totalCLMOrders;
@@ -89,7 +121,11 @@ contract waspMaster {
             waspWallet: address(0)
         });
 
-        WaspWallet _waspWallet = new WaspWallet();
+        WaspWallet _waspWallet = new WaspWallet(
+            factory,
+            positionManager,
+            _clmOrder
+        );
 
         _clmOrder.waspWallet = address(_waspWallet);
 
@@ -109,79 +145,87 @@ contract waspMaster {
         );
 
         // Now Mint the new position for the current tick
+        (tokenId, , ) = _waspWallet.mintPosition(
+            token0,
+            token1,
+            fee,
+            msg.sender,
+            amount0,
+            amount1
+        );
+
+        // approve the contract to use the link Token
+        // transferred link to this contract
+        i_link.transferFrom(msg.sender, address(this), linkAmount);
+        require(linkAmount >= 100000000000000000, "MIN LINK NOT SENT");
 
         // Create the Registery upkeep
+        RegistrationParams memory params = RegistrationParams({
+            name: "wasp",
+            encryptedEmail: abi.encode("contact@gmail.com"),
+            upkeepContract: address(_waspWallet),
+            gasLimit: 300000,
+            adminAddress: address(this),
+            checkData: "0x",
+            offchainConfig: "0x",
+            amount: linkAmount
+        });
+
+        _clmOrder.upkeepId = registerAndPredictID(params);
 
         clmOrders[clmOrderId] = _clmOrder;
     }
 
-    // *********** Chainlink Automation Variables *********** //
+    function cancelCLMOrder(uint clmOrderId) public {
+        CLMOrder memory _clmOrder = clmOrders[clmOrderId];
+        require(msg.sender == _clmOrder.owner, "ONLY CREATOR");
 
-    LinkTokenInterface public immutable i_link;
-    address public immutable registrar;
-    AutomationRegistryInterface public immutable i_registry;
-    bytes4 registerSig = KeeperRegistrarInterface.register.selector;
+        // close the position
+        WaspWallet(_clmOrder.waspWallet).closePosition();
 
-    constructor(
-        LinkTokenInterface _link,
-        address _registrar,
-        AutomationRegistryInterface _registry,
-        address _waspEx
-    ) {
-        i_link = _link;
-        registrar = _registrar;
-        i_registry = _registry;
-        exchangeRouter = IWaspEx(_waspEx);
+        // cancel the upkeep
+        i_registry.cancelUpkeep(_clmOrder.upkeepId);
+        i_registry.withdrawFunds(_clmOrder.upkeepId, _clmOrder.owner);
     }
 
     // *********** Chainlink Automation Functions *********** //
     // registry add. for sepolia: 0xE16Df59B887e3Caa439E0b29B42bA2e7976FD8b2
     // registrar add. for sepolia: 0x9a811502d843E5a03913d5A2cfb646c11463467A
 
+    // make it internal
     function registerAndPredictID(
-        string memory name,
-        bytes calldata encryptedEmail,
-        address upkeepContract,
-        uint32 gasLimit,
-        address adminAddress,
-        bytes calldata checkData,
-        uint96 amount,
-        uint8 source
-    ) public {
-        (State memory state, , ) = i_registry.getState();
-        uint256 oldNonce = state.nonce;
-        bytes memory payload = abi.encode(
-            name,
-            encryptedEmail,
-            upkeepContract,
-            gasLimit,
-            adminAddress,
-            checkData,
-            amount,
-            source,
-            address(this)
-        );
-
-        i_link.transferAndCall(
-            registrar,
-            amount,
-            bytes.concat(registerSig, payload)
-        );
-        (state, , ) = i_registry.getState();
-        uint256 newNonce = state.nonce;
-        if (newNonce == oldNonce + 1) {
-            uint256 upkeepID = uint256(
-                keccak256(
-                    abi.encodePacked(
-                        blockhash(block.number - 1),
-                        address(i_registry),
-                        uint32(oldNonce)
-                    )
-                )
-            );
+        RegistrationParams memory params
+    ) internal returns (uint256) {
+        // LINK must be approved for transfer - this can be done every time or once
+        // with an infinite approval
+        i_link.approve(address(i_registrar), params.amount);
+        uint256 upkeepID = i_registrar.registerUpkeep(params);
+        if (upkeepID != 0) {
             // DEV - Use the upkeepID however you see fit
+            return upkeepID;
         } else {
             revert("auto-approve disabled");
         }
+    }
+
+    function cancelUpkeep(uint clmOrderId) public {
+        CLMOrder memory _clmOrder = clmOrders[clmOrderId];
+        require(msg.sender == _clmOrder.owner, "ONLY CREATOR");
+        i_registry.cancelUpkeep(_clmOrder.upkeepId);
+    }
+
+    function depositLinkFunds(uint clmOrderId, uint linkAmount) public {
+        CLMOrder memory _clmOrder = clmOrders[clmOrderId];
+        require(msg.sender == _clmOrder.owner, "ONLY CREATOR");
+        i_link.transferFrom(msg.sender, address(this), linkAmount);
+        require(linkAmount >= 100000000000000000, "MIN LINK NOT SENT");
+        i_link.approve(address(i_registrar), params.amount);
+        i_registry.addFunds(_clmOrder.addFunds, linkAmount);
+    }
+
+    function withdrawLinkFunds(uint clmOrderId) public {
+        CLMOrder memory _clmOrder = clmOrders[clmOrderId];
+        require(msg.sender == _clmOrder.owner, "ONLY CREATOR");
+        i_registry.withdrawFunds(_clmOrder.upkeepId, _clmOrder.owner);
     }
 }

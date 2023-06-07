@@ -66,8 +66,9 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     function performUpkeep(bytes calldata performData) external override {
         require(_clmOrder.tokenId != 0);
-        burnPosition();
+        decreaseLiquidity();
         collectAllFees();
+        burnPosition();
         /// mint new position
         mintPosition(
             _clmOrder.token0,
@@ -146,7 +147,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         uint256 _amount0,
         uint256 _amount1
     )
-        external
+        public
         payable
         returns (uint256 tokenId, uint256 amount0, uint256 amount1)
     {
@@ -200,11 +201,46 @@ contract WaspWallet is AutomationCompatibleInterface {
             currentFeesCollected: false,
             currentLiqReduced: false
         });
+
+        // Remove allowance and refund in both assets.
+        if (amount0 < amount0ToMint) {
+            TransferHelper.safeApprove(
+                _tokenIn,
+                address(nonfungiblePositionManager),
+                0
+            );
+            uint256 refund0 = _amount0 - amount0;
+            TransferHelper.safeTransfer(_tokenIn, msg.sender, refund0);
+        }
+
+        if (amount1 < amount1ToMint) {
+            TransferHelper.safeApprove(
+                _tokenOut,
+                address(nonfungiblePositionManager),
+                0
+            );
+            uint256 refund1 = _amount1 - amount1;
+            TransferHelper.safeTransfer(_tokenOut, msg.sender, refund1);
+        }
+
+        // reduce the Approval and return the extra funds
         return (amount0, amount1);
     }
 
+    // only Master
+    function closePosition() external {
+        // collect fees
+        collectAllFees();
+        // decreaseLiquidity to 0
+        (uint amount0, uint amount1) = decreaseLiquidity();
+        // burn the Position NFT
+        burnPosition();
+        // Send the funds to the owner
+        _sendToOwner(amount0, amount1);
+    }
+
     function decreaseLiquidity()
-        external
+        public
         returns (uint256 amount0, uint256 amount1)
     {
         // caller must be the owner of the NFT
@@ -232,7 +268,7 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function collectAllFees()
-        external
+        public
         returns (uint256 amount0, uint256 amount1)
     {
         // Caller must own the ERC721 position, meaning it must be a deposit
@@ -258,15 +294,24 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     //Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
     // Only executed once the positions is reduces to 0 and fees collected (check)
-    function burnPosition() external payable {
+    function burnPosition() public payable {
         nonfungiblePositionManager.burn(_position.tokenId);
 
         _position.currentPositionBurnt = true;
     }
 
+    function withdraw(uint256 amount0, uint256 amount1) external {
+        // check msg.sender
+        _sendToOwner(amount0, amount1);
+    }
+
     function _sendToOwner(uint256 amount0, uint256 amount1) internal {
         TransferHelper.safeTransfer(_position.token0, _clmOrder.owner, amount0);
         TransferHelper.safeTransfer(_position.token1, _clmOrder.owner, amount1);
+    }
+
+    function getPosition() public {
+        nonfungiblePositionManager.positions(_position.tokenId);
     }
 }
 
@@ -355,4 +400,24 @@ interface INonfungiblePositionManager {
     ) external returns (uint256 amount0, uint256 amount1);
 
     function burn(uint256 tokenId) external;
+
+    function positions(
+        uint256 tokenId
+    )
+        external
+        view
+        returns (
+            uint96 nonce,
+            address operator,
+            address token0,
+            address token1,
+            uint24 fee,
+            int24 tickLower,
+            int24 tickUpper,
+            uint128 liquidity,
+            uint256 feeGrowthInside0LastX128,
+            uint256 feeGrowthInside1LastX128,
+            uint128 tokensOwed0,
+            uint128 tokensOwed1
+        );
 }
