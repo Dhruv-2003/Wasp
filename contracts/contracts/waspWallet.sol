@@ -2,7 +2,7 @@
 pragma solidity ^0.8.14;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+// import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./waspMaster.sol";
 
 // - checkUpkeep
@@ -12,6 +12,21 @@ import "./waspMaster.sol";
 // - burn
 // - withdraw
 // - deposit
+
+interface IERC20 {
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+}
 
 contract WaspWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
@@ -50,7 +65,9 @@ contract WaspWallet is AutomationCompatibleInterface {
                           Chainlink Automation
     //////////////////////////////////////////////////////////////*/
 
-    function checkUpKeep()
+    function checkUpKeep(
+        bytes calldata checkData
+    )
         external
         view
         override
@@ -78,7 +95,6 @@ contract WaspWallet is AutomationCompatibleInterface {
             _clmOrder.liqAmount0,
             _clmOrder.liqAmount1
         );
-        totalCLMOrders += 1;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -90,14 +106,14 @@ contract WaspWallet is AutomationCompatibleInterface {
         address _tokenOut,
         uint24 fee
     ) internal view returns (bool) {
-        (uint160 _newprice, int24 _newtick) = exchangeRouter.getPrice(
+        (uint160 _newprice, int24 _newtick) = getPrice(
             _tokenIn,
             _tokenOut,
             fee
         );
         // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
-        require(_lowerTick < _upperTick);
-        if (_lowerTick <= _newtick <= _upperTick) {
+        // require(_lowerTick < _upperTick);
+        if (_position.lowerTick <= _newtick <= _position.upperTick) {
             return false;
         } else {
             return true;
@@ -158,13 +174,9 @@ contract WaspWallet is AutomationCompatibleInterface {
         );
 
         // Approve the position manager
-        TransferHelper.safeApprove(
-            _tokenIn,
-            address(nonfungiblePositionManager),
-            _amount0
-        );
-        TransferHelper.safeApprove(
-            _tokenOut,
+
+        IERC20(_tokenIn).approve(address(nonfungiblePositionManager), _amount0);
+        IERC20(_tokenOut).approve(
             address(nonfungiblePositionManager),
             _amount1
         );
@@ -188,7 +200,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager
             .mint(params);
 
-        _position = positionData({
+        _position = PositionData({
             tokenId: tokenId,
             liquidity: liquidity,
             lowerTick: _tickLower,
@@ -203,24 +215,17 @@ contract WaspWallet is AutomationCompatibleInterface {
         });
 
         // Remove allowance and refund in both assets.
-        if (amount0 < amount0ToMint) {
-            TransferHelper.safeApprove(
-                _tokenIn,
-                address(nonfungiblePositionManager),
-                0
-            );
+        if (amount0 < _amount0) {
+            IERC20(_tokenIn).approve(address(nonfungiblePositionManager), 0);
             uint256 refund0 = _amount0 - amount0;
-            TransferHelper.safeTransfer(_tokenIn, msg.sender, refund0);
+
+            IERC20(_tokenIn).transfer(msg.sender, refund0);
         }
 
-        if (amount1 < amount1ToMint) {
-            TransferHelper.safeApprove(
-                _tokenOut,
-                address(nonfungiblePositionManager),
-                0
-            );
+        if (amount1 < _amount1) {
+            IERC20(_tokenOut).approve(address(nonfungiblePositionManager), 0);
             uint256 refund1 = _amount1 - amount1;
-            TransferHelper.safeTransfer(_tokenOut, msg.sender, refund1);
+            IERC20(_tokenOut).transfer(msg.sender, refund1);
         }
 
         // reduce the Approval and return the extra funds
@@ -306,8 +311,9 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function _sendToOwner(uint256 amount0, uint256 amount1) internal {
-        TransferHelper.safeTransfer(_position.token0, _clmOrder.owner, amount0);
-        TransferHelper.safeTransfer(_position.token1, _clmOrder.owner, amount1);
+        IERC20(_position.token0).transfer(_clmOrder.owner, amount0);
+
+        IERC20(_position.token1).transfer(_clmOrder.owner, amount1);
     }
 
     function getPosition() public {

@@ -26,7 +26,7 @@ pragma solidity ^0.8.14;
 import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface1_2.sol";
 import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+// import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
 import "./waspWallet.sol";
 
@@ -74,7 +74,8 @@ contract waspMaster {
 
     LinkTokenInterface public immutable i_link;
     // address public immutable registrar;
-    AutomationRegistryInterface public immutable i_registry;
+    // AutomationRegistryInterface public immutable i_registry;
+    KeeperRegistrarInterface public immutable i_registrar;
 
     // bytes4 registerSig = KeeperRegistrarInterface.register.selector;
 
@@ -82,15 +83,14 @@ contract waspMaster {
         address _factory,
         address _positionManager,
         LinkTokenInterface _link,
-        AutomationRegistryInterface _registry,
-        address _waspEx
+        KeeperRegistrarInterface registrar
     ) {
         factory = _factory;
         positionManager = _positionManager;
         i_link = _link;
         // registrar = _registrar;
-        i_registry = _registry;
-        exchangeRouter = IWaspEx(_waspEx);
+        // i_registry = _registry;
+        i_registrar = registrar;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -130,22 +130,13 @@ contract waspMaster {
         _clmOrder.waspWallet = address(_waspWallet);
 
         // transfer the tokens to waspWallet directly
-        TransferHelper.safeTransferFrom(
-            token0,
-            msg.sender,
-            address(_waspWallet),
-            amount0
-        );
 
-        TransferHelper.safeTransferFrom(
-            token1,
-            msg.sender,
-            address(_waspWallet),
-            amount1
-        );
+        IERC20(token0).transferFrom(msg.sender, address(_waspWallet), amount0);
+
+        IERC20(token1).transferFrom(msg.sender, address(_waspWallet), amount1);
 
         // Now Mint the new position for the current tick
-        (tokenId, , ) = _waspWallet.mintPosition(
+        (_clmOrder.tokenId, , ) = _waspWallet.mintPosition(
             token0,
             token1,
             fee,
