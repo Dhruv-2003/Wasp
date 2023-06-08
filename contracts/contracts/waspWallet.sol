@@ -70,7 +70,7 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     function checkUpkeep(
         bytes calldata checkData
-    ) external override returns (bool upkeepNeeded, bytes memory performData) {
+    ) external view override returns (bool upkeepNeeded, bytes memory performData) {
         upkeepNeeded = checkConditions(
             _clmOrder.token0,
             _clmOrder.token1,
@@ -104,7 +104,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         address _tokenOut,
         uint24 fee
     ) internal view returns (bool) {
-        (uint160 _newprice, int24 _newtick) = getPrice(
+        (uint160 _newprice, int24 _newtick, ) = getPrice(
             _tokenIn,
             _tokenOut,
             fee
@@ -128,12 +128,13 @@ contract WaspWallet is AutomationCompatibleInterface {
         address tokenIn,
         address tokenOut,
         uint24 fee
-    ) public view returns (uint160, int24) {
+    ) public view returns (uint160, int24, int24) {
         IUniswapV3Pool pool = IUniswapV3Pool(
             factory.getPool(tokenIn, tokenOut, fee)
         );
         (uint160 sqrtPriceX96, int24 tick, , , , , ) = pool.slot0();
-        return (sqrtPriceX96, tick);
+        int24 tickSpacing = pool.tickSpacing();
+        return (sqrtPriceX96, tick, tickSpacing);
     }
 
     function getRangeTicks(
@@ -141,14 +142,16 @@ contract WaspWallet is AutomationCompatibleInterface {
         address _tokenOut,
         uint24 fee
     ) public view returns (int24 lowerTick, int24 upperTick) {
-        (uint160 _sqrtPriceX96, int24 tick) = getPrice(
+        (uint160 _sqrtPriceX96, int24 tick, int24 tickSpacing) = getPrice(
             _tokenIn,
             _tokenOut,
             fee
         );
-        lowerTick = tick - 500;
-        upperTick = tick + 500;
-        return (lowerTick, upperTick);
+        int24 tickSpaceRem = tick % tickSpacing;
+        int24 meanTick = tick - tickSpaceRem;
+        lowerTick = meanTick - (tickSpacing * 5);
+        upperTick = meanTick + (tickSpacing * 5);
+        // return (lowerTick, upperTick, meanTick, tickSpaceRem);
     }
 
     //The caller of this method receives a callback in the form of IUniswapV3MintCallback#uniswapV3MintCallback
