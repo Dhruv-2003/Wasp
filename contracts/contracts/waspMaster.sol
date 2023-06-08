@@ -30,19 +30,21 @@ import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 
 import "./waspWallet.sol";
 
+struct RegistrationParams {
+    string name;
+    bytes encryptedEmail;
+    address upkeepContract;
+    uint32 gasLimit;
+    address adminAddress;
+    bytes checkData;
+    bytes offchainConfig;
+    uint96 amount;
+}
+
 interface KeeperRegistrarInterface {
-    // mapping( )
-    function register(
-        string memory name,
-        bytes calldata encryptedEmail,
-        address upkeepContract,
-        uint32 gasLimit,
-        address adminAddress,
-        bytes calldata checkData,
-        uint96 amount,
-        uint8 source,
-        address sender
-    ) external;
+    function registerUpkeep(
+        RegistrationParams calldata requestParams
+    ) external returns (uint256);
 }
 
 contract waspMaster {
@@ -71,22 +73,23 @@ contract waspMaster {
     // *********** Chainlink Automation Variables *********** //
 
     LinkTokenInterface public immutable i_link;
-    address public immutable registrar;
+    // address public immutable registrar;
     AutomationRegistryInterface public immutable i_registry;
-    // KeeperRegistrarInterface public immutable i_registrar;
-    bytes4 registerSig = KeeperRegistrarInterface.register.selector;
+    KeeperRegistrarInterface public immutable i_registrar;
+
+    // bytes4 registerSig = KeeperRegistrarInterface.register.selector;
 
     constructor(
         address _factory,
         address _positionManager,
         LinkTokenInterface _link,
-        address _registrar,
+        KeeperRegistrarInterface _registrar,
         AutomationRegistryInterface _registry
     ) {
         factory = _factory;
         positionManager = _positionManager;
         i_link = _link;
-        registrar = _registrar;
+        i_registrar = _registrar;
         i_registry = _registry;
         // i_registrar = registrar;
     }
@@ -101,9 +104,8 @@ contract waspMaster {
         uint amount0,
         uint amount1,
         uint24 fee,
-        uint linkAmount,
-        bytes calldata email,
-        bytes calldata checkData
+        uint96 linkAmount,
+        bytes calldata email
     ) external returns (uint clmOrderId) {
         totalCLMOrders += 1;
         clmOrderId = totalCLMOrders;
@@ -121,7 +123,10 @@ contract waspMaster {
             creationTimestamp: block.timestamp,
             waspWallet: address(0)
         });
-        (_clmOrder.waspWallet , _clmOrder.tokenId)= createAndMint(_clmOrder, msg.sender);
+        (_clmOrder.waspWallet, _clmOrder.tokenId) = createAndMint(
+            _clmOrder,
+            msg.sender
+        );
 
         // approve the contract to use the link Token
         // transferred link to this contract
@@ -133,25 +138,11 @@ contract waspMaster {
                 "wasp CLM Order",
                 email,
                 _clmOrder.waspWallet,
-                30000,
+                999999,
                 address(this),
-                checkData,
-                uint96(linkAmount),
-                0
+                linkAmount
             );
         }
-
-        // Create the Registery upkeep
-        // RegistrationParams memory params = RegistrationParams({
-        //     name: "wasp",
-        //     encryptedEmail: abi.encode("contact@gmail.com"),
-        //     upkeepContract: address(_waspWallet),
-        //     gasLimit: 300000,
-        //     adminAddress: address(this),
-        //     checkData: "0x",
-        //     offchainConfig: "0x",
-        //     amount: linkAmount
-        // });
 
         clmOrders[clmOrderId] = _clmOrder;
     }
@@ -214,43 +205,24 @@ contract waspMaster {
         address upkeepContract,
         uint32 gasLimit,
         address adminAddress,
-        bytes calldata checkData,
-        uint96 amount,
-        uint8 source
-    ) internal returns (uint256) {
-        (State memory state, , ) = i_registry.getState();
-        uint256 oldNonce = state.nonce;
-        bytes memory payload = abi.encode(
-            name,
-            encryptedEmail,
-            upkeepContract,
-            gasLimit,
-            adminAddress,
-            checkData,
-            amount,
-            source,
-            address(this)
-        );
+        uint96 amount
+    ) public returns (uint256) {
+        RegistrationParams memory params = RegistrationParams({
+            name: name,
+            encryptedEmail: encryptedEmail,
+            upkeepContract: upkeepContract,
+            gasLimit: gasLimit,
+            adminAddress: adminAddress,
+            checkData: "0x",
+            offchainConfig: "0x",
+            amount: amount
+        });
 
-        i_link.transferAndCall(
-            registrar,
-            amount,
-            bytes.concat(registerSig, payload)
-        );
-        (state, , ) = i_registry.getState();
-        uint256 newNonce = state.nonce;
-        if (newNonce == oldNonce + 1) {
-            uint256 upkeepID = uint256(
-                keccak256(
-                    abi.encodePacked(
-                        blockhash(block.number - 1),
-                        address(i_registry),
-                        uint32(oldNonce)
-                    )
-                )
-            );
-            return upkeepID;
+        i_link.approve(address(i_registrar), params.amount);
+        uint256 upkeepID = i_registrar.registerUpkeep(params);
+        if (upkeepID != 0) {
             // DEV - Use the upkeepID however you see fit
+            return upkeepID;
         } else {
             revert("auto-approve disabled");
         }
