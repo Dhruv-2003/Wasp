@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../interfaces/Gelato/AutomateTaskCreator.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -12,15 +11,15 @@ import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-
-import "./dCaf.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import "./dcaMaster.sol";
 
 // Tasks
 // Receiving stream
 // Track a user's portfolio
 // unwrap and Swap
 // pay for Gelato's task - so all the task will be created from this
-contract dcaWallet is Ownable, AutomateTaskCreator {
+contract dcaWallet is Ownable, AutomationCompatibleInterface {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
@@ -158,94 +157,17 @@ contract dcaWallet is Ownable, AutomateTaskCreator {
     }
 
     /*///////////////////////////////////////////////////////////////
-                           Gelato
+                           Chainlink Automation
     //////////////////////////////////////////////////////////////*/
 
-    function depositGelatoFees() external payable {
-        _depositFunds(msg.value, ETH);
+   function checkUpkeep(
+        bytes calldata checkData
+    ) external override returns (bool upkeepNeeded, bytes memory performData) {
+       
     }
 
-    // address(0) for ETH
-    function withdrawGealtoFees(uint256 _amount, address _token) external {
-        withdrawFunds(_amount, _token);
-    }
-
-    function createTask1(
-        uint frequency
-    ) external onlyManager returns (bytes32 taskId) {
-        ModuleData memory moduleData = ModuleData({
-            modules: new Module[](2),
-            args: new bytes[](2)
-        });
-
-        moduleData.modules[0] = Module.TIME;
-        moduleData.modules[1] = Module.PROXY;
-        // moduleData.modules[2] = Module.SINGLE_EXEC;
-
-        // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(
-            block.timestamp + frequency,
-            frequency
-        );
-        moduleData.args[1] = _proxyModuleArg();
-        // moduleData.args[2] = _singleExecModuleArg();
-
-        taskId = _createTask(
-            address(this),
-            abi.encodeCall(this.executeGelatoTask1,()),
-            moduleData,
-            address(0)
-        );
-
-        dcafOrder.task1Id = taskId;
-        /// Here we just pass the function selector we are looking to execute
-        // emit limitOrderTaskCreated(orderId, taskId);
-    }
-
-    // we might need to pass extra args to create and store the TaskId
-    // called in the manager
-    function createTask2(
-        uint _dcafOrderId,
-        uint timePeriod
-    ) external onlyManager returns (bytes32 taskId) {
-        ModuleData memory moduleData = ModuleData({
-            modules: new Module[](3),
-            args: new bytes[](3)
-        });
-
-        moduleData.modules[0] = Module.TIME;
-        moduleData.modules[1] = Module.PROXY;
-        moduleData.modules[2] = Module.SINGLE_EXEC;
-
-        // we can pass any arg we want in the encodeCall
-        moduleData.args[0] = _timeModuleArg(
-            block.timestamp + timePeriod,
-            timePeriod
-        );
-        moduleData.args[1] = _proxyModuleArg();
-        moduleData.args[2] = _singleExecModuleArg();
-
-        taskId = _createTask(
-            dcafManager,
-            abi.encodeCall(
-                dCafProtocol.executeGelatoTask2,
-                (_dcafOrderId)
-            ),
-            moduleData,
-            address(0)
-        );
-
-        dcafOrder.task2Id = taskId;
-        /// Here we just pass the function selector we are looking to execute
-
-        // emit limitOrderTaskCreated(orderId, taskId);
-    }
-
-    function cancelTask(bytes32 taskId) public onlyManager {
-        /// add restrictions
-        _cancelTask(taskId);
-
-        dcafOrder.activeStatus = false;
+    function performUpkeep(bytes calldata performData) external override {
+        
     }
 
     /*///////////////////////////////////////////////////////////////
