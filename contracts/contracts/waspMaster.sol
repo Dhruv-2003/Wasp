@@ -30,21 +30,19 @@ import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 
 import "./waspWallet.sol";
 
-struct RegistrationParams {
-    string name;
-    bytes encryptedEmail;
-    address upkeepContract;
-    uint32 gasLimit;
-    address adminAddress;
-    bytes checkData;
-    bytes offchainConfig;
-    uint96 amount;
-}
-
 interface KeeperRegistrarInterface {
-    function registerUpkeep(
-        RegistrationParams calldata requestParams
-    ) external returns (uint256);
+    // mapping( )
+    function register(
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        bytes calldata checkData,
+        uint96 amount,
+        uint8 source,
+        address sender
+    ) external;
 }
 
 contract waspMaster {
@@ -61,7 +59,7 @@ contract waspMaster {
         uint24 fee;
         uint256 tokenId;
         uint256 upkeepId;
-        uint256 cretionTimestamp;
+        uint256 creationTimestamp;
         address waspWallet;
     }
     uint public totalCLMOrders;
@@ -73,24 +71,24 @@ contract waspMaster {
     // *********** Chainlink Automation Variables *********** //
 
     LinkTokenInterface public immutable i_link;
-    // address public immutable registrar;
-    // AutomationRegistryInterface public immutable i_registry;
-    KeeperRegistrarInterface public immutable i_registrar;
-
-    // bytes4 registerSig = KeeperRegistrarInterface.register.selector;
+    address public immutable registrar;
+    AutomationRegistryInterface public immutable i_registry;
+    // KeeperRegistrarInterface public immutable i_registrar;
+    bytes4 registerSig = KeeperRegistrarInterface.register.selector;
 
     constructor(
         address _factory,
         address _positionManager,
         LinkTokenInterface _link,
-        KeeperRegistrarInterface registrar
+        address _registrar,
+        AutomationRegistryInterface _registry
     ) {
         factory = _factory;
         positionManager = _positionManager;
         i_link = _link;
-        // registrar = _registrar;
-        // i_registry = _registry;
-        i_registrar = registrar;
+        registrar = _registrar;
+        i_registry = _registry;
+        // i_registrar = registrar;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -103,66 +101,57 @@ contract waspMaster {
         uint amount0,
         uint amount1,
         uint24 fee,
-        uint linkAmount
+        uint linkAmount,
+        bytes calldata email,
+        bytes calldata checkData
     ) external returns (uint clmOrderId) {
         totalCLMOrders += 1;
         clmOrderId = totalCLMOrders;
-        // Approval needs to be given to the master contract for token Usage
 
+        // Approval needs to be given to the master contract for token Usage
         CLMOrder memory _clmOrder = CLMOrder({
             owner: msg.sender,
             token0: token0,
             token1: token1,
             amount0: amount0,
-            amoun1: amount1,
+            amount1: amount1,
             fee: fee,
             tokenId: 0,
+            upkeepId: 0,
             creationTimestamp: block.timestamp,
             waspWallet: address(0)
         });
-
-        WaspWallet _waspWallet = new WaspWallet(
-            factory,
-            positionManager,
-            _clmOrder
-        );
-
-        _clmOrder.waspWallet = address(_waspWallet);
-
-        // transfer the tokens to waspWallet directly
-
-        IERC20(token0).transferFrom(msg.sender, address(_waspWallet), amount0);
-
-        IERC20(token1).transferFrom(msg.sender, address(_waspWallet), amount1);
-
-        // Now Mint the new position for the current tick
-        (_clmOrder.tokenId, , ) = _waspWallet.mintPosition(
-            token0,
-            token1,
-            fee,
-            msg.sender,
-            amount0,
-            amount1
-        );
+        (_clmOrder.waspWallet , _clmOrder.tokenId)= createAndMint(_clmOrder, msg.sender);
 
         // approve the contract to use the link Token
         // transferred link to this contract
-        i_link.transferFrom(msg.sender, address(this), linkAmount);
-        require(linkAmount >= 100000000000000000, "MIN LINK NOT SENT");
+        {
+            i_link.transferFrom(msg.sender, address(this), linkAmount);
+            require(linkAmount >= 100000000000000000, "MIN LINK NOT SENT");
+
+            _clmOrder.upkeepId = registerAndPredictID(
+                "wasp CLM Order",
+                email,
+                _clmOrder.waspWallet,
+                30000,
+                address(this),
+                checkData,
+                uint96(linkAmount),
+                0
+            );
+        }
 
         // Create the Registery upkeep
-        RegistrationParams memory params = RegistrationParams({
-            name: "wasp",
-            encryptedEmail: abi.encode("contact@gmail.com"),
-            upkeepContract: address(_waspWallet),
-            gasLimit: 300000,
-            adminAddress: address(this),
-            checkData: "0x",
-            offchainConfig: "0x",
-            amount: linkAmount
-        });
-
-        _clmOrder.upkeepId = registerAndPredictID(params);
+        // RegistrationParams memory params = RegistrationParams({
+        //     name: "wasp",
+        //     encryptedEmail: abi.encode("contact@gmail.com"),
+        //     upkeepContract: address(_waspWallet),
+        //     gasLimit: 300000,
+        //     adminAddress: address(this),
+        //     checkData: "0x",
+        //     offchainConfig: "0x",
+        //     amount: linkAmount
+        // });
 
         clmOrders[clmOrderId] = _clmOrder;
     }
@@ -176,7 +165,42 @@ contract waspMaster {
 
         // cancel the upkeep
         i_registry.cancelUpkeep(_clmOrder.upkeepId);
-        i_registry.withdrawFunds(_clmOrder.upkeepId, _clmOrder.owner);
+        // i_registry.withdrawFunds(_clmOrder.upkeepId, _clmOrder.owner);
+    }
+
+    function createAndMint(
+        CLMOrder memory clmOrder,
+        address creator
+    ) internal returns (address _wallet, uint tokenId) {
+        WaspWallet _waspWallet = new WaspWallet(
+            factory,
+            positionManager,
+            clmOrder
+        );
+        _wallet = address(_waspWallet);
+
+        // transfer the tokens to waspWallet directly
+        IERC20(clmOrder.token0).transferFrom(
+            creator,
+            address(_waspWallet),
+            clmOrder.amount0
+        );
+
+        IERC20(clmOrder.token1).transferFrom(
+            creator,
+            address(_waspWallet),
+            clmOrder.amount1
+        );
+
+        // Now Mint the new position for the current tick
+        (tokenId, , ) = _waspWallet.mintPosition(
+            clmOrder.token0,
+            clmOrder.token1,
+            clmOrder.fee,
+            creator,
+            clmOrder.amount0,
+            clmOrder.amount1
+        );
     }
 
     // *********** Chainlink Automation Functions *********** //
@@ -185,15 +209,48 @@ contract waspMaster {
 
     // make it internal
     function registerAndPredictID(
-        RegistrationParams memory params
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        bytes calldata checkData,
+        uint96 amount,
+        uint8 source
     ) internal returns (uint256) {
-        // LINK must be approved for transfer - this can be done every time or once
-        // with an infinite approval
-        i_link.approve(address(i_registrar), params.amount);
-        uint256 upkeepID = i_registrar.registerUpkeep(params);
-        if (upkeepID != 0) {
-            // DEV - Use the upkeepID however you see fit
+        (State memory state, , ) = i_registry.getState();
+        uint256 oldNonce = state.nonce;
+        bytes memory payload = abi.encode(
+            name,
+            encryptedEmail,
+            upkeepContract,
+            gasLimit,
+            adminAddress,
+            checkData,
+            amount,
+            source,
+            address(this)
+        );
+
+        i_link.transferAndCall(
+            registrar,
+            amount,
+            bytes.concat(registerSig, payload)
+        );
+        (state, , ) = i_registry.getState();
+        uint256 newNonce = state.nonce;
+        if (newNonce == oldNonce + 1) {
+            uint256 upkeepID = uint256(
+                keccak256(
+                    abi.encodePacked(
+                        blockhash(block.number - 1),
+                        address(i_registry),
+                        uint32(oldNonce)
+                    )
+                )
+            );
             return upkeepID;
+            // DEV - Use the upkeepID however you see fit
         } else {
             revert("auto-approve disabled");
         }
@@ -205,18 +262,18 @@ contract waspMaster {
         i_registry.cancelUpkeep(_clmOrder.upkeepId);
     }
 
-    function depositLinkFunds(uint clmOrderId, uint linkAmount) public {
+    function depositLinkFunds(uint clmOrderId, uint96 linkAmount) public {
         CLMOrder memory _clmOrder = clmOrders[clmOrderId];
         require(msg.sender == _clmOrder.owner, "ONLY CREATOR");
         i_link.transferFrom(msg.sender, address(this), linkAmount);
         require(linkAmount >= 100000000000000000, "MIN LINK NOT SENT");
-        i_link.approve(address(i_registrar), params.amount);
-        i_registry.addFunds(_clmOrder.addFunds, linkAmount);
+        i_link.approve(address(i_registry), linkAmount);
+        i_registry.addFunds(_clmOrder.upkeepId, linkAmount);
     }
 
     function withdrawLinkFunds(uint clmOrderId) public {
         CLMOrder memory _clmOrder = clmOrders[clmOrderId];
         require(msg.sender == _clmOrder.owner, "ONLY CREATOR");
-        i_registry.withdrawFunds(_clmOrder.upkeepId, _clmOrder.owner);
+        // i_registry.withdrawFunds(_clmOrder.upkeepId, _clmOrder.owner);
     }
 }

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.19;
+import {INonfungiblePositionManager} from "./interfaces/INonFungiblePositionManager.sol";
+import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";
+import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 // import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
@@ -7,7 +10,7 @@ import "./waspMaster.sol";
 
 // - checkUpkeep
 // - performUpkeep
-// - mint
+// - mints
 // - collect
 // - burn
 // - withdraw
@@ -65,14 +68,9 @@ contract WaspWallet is AutomationCompatibleInterface {
                           Chainlink Automation
     //////////////////////////////////////////////////////////////*/
 
-    function checkUpKeep(
+    function checkUpkeep(
         bytes calldata checkData
-    )
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
+    ) external override returns (bool upkeepNeeded, bytes memory performData) {
         upkeepNeeded = checkConditions(
             _clmOrder.token0,
             _clmOrder.token1,
@@ -92,8 +90,8 @@ contract WaspWallet is AutomationCompatibleInterface {
             _clmOrder.token1,
             _clmOrder.fee,
             _clmOrder.owner,
-            _clmOrder.liqAmount0,
-            _clmOrder.liqAmount1
+            _position.liqAmount0,
+            _position.liqAmount1
         );
     }
 
@@ -113,7 +111,9 @@ contract WaspWallet is AutomationCompatibleInterface {
         );
         // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
         // require(_lowerTick < _upperTick);
-        if (_position.lowerTick <= _newtick <= _position.upperTick) {
+        if (
+            _position.lowerTick <= _newtick && _newtick <= _position.upperTick
+        ) {
             return false;
         } else {
             return true;
@@ -229,7 +229,6 @@ contract WaspWallet is AutomationCompatibleInterface {
         }
 
         // reduce the Approval and return the extra funds
-        return (amount0, amount1);
     }
 
     // only Master
@@ -311,119 +310,12 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function _sendToOwner(uint256 amount0, uint256 amount1) internal {
-        IERC20(_position.token0).transfer(_clmOrder.owner, amount0);
+        IERC20(_clmOrder.token0).transfer(_clmOrder.owner, amount0);
 
-        IERC20(_position.token1).transfer(_clmOrder.owner, amount1);
+        IERC20(_clmOrder.token1).transfer(_clmOrder.owner, amount1);
     }
 
     function getPosition() public {
         nonfungiblePositionManager.positions(_position.tokenId);
     }
-}
-
-interface IUniswapV3Factory {
-    function getPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external view returns (address pool);
-}
-
-interface IUniswapV3Pool {
-    function slot0()
-        external
-        view
-        returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            uint8 feeProtocol,
-            bool unlocked
-        );
-}
-
-interface INonfungiblePositionManager {
-    struct MintParams {
-        address token0;
-        address token1;
-        uint24 fee;
-        int24 tickLower;
-        int24 tickUpper;
-        uint256 amount0Desired;
-        uint256 amount1Desired;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        address recipient;
-        uint256 deadline;
-    }
-    struct IncreaseLiquidityParams {
-        uint256 tokenId;
-        uint256 amount0Desired;
-        uint256 amount1Desired;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        uint256 deadline;
-    }
-
-    struct DecreaseLiquidityParams {
-        uint256 tokenId;
-        uint128 liquidity;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        uint256 deadline;
-    }
-
-    struct CollectParams {
-        uint256 tokenId;
-        address recipient;
-        uint128 amount0Max;
-        uint128 amount1Max;
-    }
-
-    function mint(
-        MintParams memory params
-    )
-        external
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        );
-
-    function increaseLiquidity(
-        IncreaseLiquidityParams params
-    ) external returns (uint128 liquidity, uint256 amount0, uint256 amount1);
-
-    function decreaseLiquidity(
-        DecreaseLiquidityParams params
-    ) external returns (uint256 amount0, uint256 amount1);
-
-    function collect(
-        CollectParams memory params
-    ) external returns (uint256 amount0, uint256 amount1);
-
-    function burn(uint256 tokenId) external;
-
-    function positions(
-        uint256 tokenId
-    )
-        external
-        view
-        returns (
-            uint96 nonce,
-            address operator,
-            address token0,
-            address token1,
-            uint24 fee,
-            int24 tickLower,
-            int24 tickUpper,
-            uint128 liquidity,
-            uint256 feeGrowthInside0LastX128,
-            uint256 feeGrowthInside1LastX128,
-            uint128 tokensOwed0,
-            uint128 tokensOwed1
-        );
 }
