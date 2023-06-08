@@ -1,17 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.19;
+import {INonfungiblePositionManager} from "./interfaces/INonFungiblePositionManager.sol";
+import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";
+import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+// import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "./waspMaster.sol";
 
 // - checkUpkeep
 // - performUpkeep
-// - mint
+// - mints
 // - collect
 // - burn
 // - withdraw
 // - deposit
+
+interface IERC20 {
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function transfer(
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+}
 
 contract WaspWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
@@ -50,12 +68,9 @@ contract WaspWallet is AutomationCompatibleInterface {
                           Chainlink Automation
     //////////////////////////////////////////////////////////////*/
 
-    function checkUpKeep()
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
+    function checkUpkeep(
+        bytes calldata checkData
+    ) external override returns (bool upkeepNeeded, bytes memory performData) {
         upkeepNeeded = checkConditions(
             _clmOrder.token0,
             _clmOrder.token1,
@@ -66,18 +81,18 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     function performUpkeep(bytes calldata performData) external override {
         require(_clmOrder.tokenId != 0);
-        burnPosition();
+        decreaseLiquidity();
         collectAllFees();
+        burnPosition();
         /// mint new position
         mintPosition(
             _clmOrder.token0,
             _clmOrder.token1,
             _clmOrder.fee,
             _clmOrder.owner,
-            _clmOrder.liqAmount0,
-            _clmOrder.liqAmount1
+            _position.liqAmount0,
+            _position.liqAmount1
         );
-        totalCLMOrders += 1;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -89,14 +104,16 @@ contract WaspWallet is AutomationCompatibleInterface {
         address _tokenOut,
         uint24 fee
     ) internal view returns (bool) {
-        (uint160 _newprice, int24 _newtick) = exchangeRouter.getPrice(
+        (uint160 _newprice, int24 _newtick) = getPrice(
             _tokenIn,
             _tokenOut,
             fee
         );
         // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
-        require(_lowerTick < _upperTick);
-        if (_lowerTick <= _newtick <= _upperTick) {
+        // require(_lowerTick < _upperTick);
+        if (
+            _position.lowerTick <= _newtick && _newtick <= _position.upperTick
+        ) {
             return false;
         } else {
             return true;
@@ -146,7 +163,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         uint256 _amount0,
         uint256 _amount1
     )
-        external
+        public
         payable
         returns (uint256 tokenId, uint256 amount0, uint256 amount1)
     {
@@ -157,13 +174,9 @@ contract WaspWallet is AutomationCompatibleInterface {
         );
 
         // Approve the position manager
-        TransferHelper.safeApprove(
-            _tokenIn,
-            address(nonfungiblePositionManager),
-            _amount0
-        );
-        TransferHelper.safeApprove(
-            _tokenOut,
+
+        IERC20(_tokenIn).approve(address(nonfungiblePositionManager), _amount0);
+        IERC20(_tokenOut).approve(
             address(nonfungiblePositionManager),
             _amount1
         );
@@ -187,7 +200,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager
             .mint(params);
 
-        _position = positionData({
+        _position = PositionData({
             tokenId: tokenId,
             liquidity: liquidity,
             lowerTick: _tickLower,
@@ -200,11 +213,38 @@ contract WaspWallet is AutomationCompatibleInterface {
             currentFeesCollected: false,
             currentLiqReduced: false
         });
-        return (amount0, amount1);
+
+        // Remove allowance and refund in both assets.
+        if (amount0 < _amount0) {
+            IERC20(_tokenIn).approve(address(nonfungiblePositionManager), 0);
+            uint256 refund0 = _amount0 - amount0;
+
+            IERC20(_tokenIn).transfer(msg.sender, refund0);
+        }
+
+        if (amount1 < _amount1) {
+            IERC20(_tokenOut).approve(address(nonfungiblePositionManager), 0);
+            uint256 refund1 = _amount1 - amount1;
+            IERC20(_tokenOut).transfer(msg.sender, refund1);
+        }
+
+        // reduce the Approval and return the extra funds
+    }
+
+    // only Master
+    function closePosition() external {
+        // collect fees
+        collectAllFees();
+        // decreaseLiquidity to 0
+        (uint amount0, uint amount1) = decreaseLiquidity();
+        // burn the Position NFT
+        burnPosition();
+        // Send the funds to the owner
+        _sendToOwner(amount0, amount1);
     }
 
     function decreaseLiquidity()
-        external
+        public
         returns (uint256 amount0, uint256 amount1)
     {
         // caller must be the owner of the NFT
@@ -232,7 +272,7 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function collectAllFees()
-        external
+        public
         returns (uint256 amount0, uint256 amount1)
     {
         // Caller must own the ERC721 position, meaning it must be a deposit
@@ -258,101 +298,24 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     //Can be used to trigger a recalculation of fees owed to a position by calling with an amount of 0
     // Only executed once the positions is reduces to 0 and fees collected (check)
-    function burnPosition() external payable {
+    function burnPosition() public payable {
         nonfungiblePositionManager.burn(_position.tokenId);
 
         _position.currentPositionBurnt = true;
     }
 
+    function withdraw(uint256 amount0, uint256 amount1) external {
+        // check msg.sender
+        _sendToOwner(amount0, amount1);
+    }
+
     function _sendToOwner(uint256 amount0, uint256 amount1) internal {
-        TransferHelper.safeTransfer(_position.token0, _clmOrder.owner, amount0);
-        TransferHelper.safeTransfer(_position.token1, _clmOrder.owner, amount1);
-    }
-}
+        IERC20(_clmOrder.token0).transfer(_clmOrder.owner, amount0);
 
-interface IUniswapV3Factory {
-    function getPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) external view returns (address pool);
-}
-
-interface IUniswapV3Pool {
-    function slot0()
-        external
-        view
-        returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            uint8 feeProtocol,
-            bool unlocked
-        );
-}
-
-interface INonfungiblePositionManager {
-    struct MintParams {
-        address token0;
-        address token1;
-        uint24 fee;
-        int24 tickLower;
-        int24 tickUpper;
-        uint256 amount0Desired;
-        uint256 amount1Desired;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        address recipient;
-        uint256 deadline;
-    }
-    struct IncreaseLiquidityParams {
-        uint256 tokenId;
-        uint256 amount0Desired;
-        uint256 amount1Desired;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        uint256 deadline;
+        IERC20(_clmOrder.token1).transfer(_clmOrder.owner, amount1);
     }
 
-    struct DecreaseLiquidityParams {
-        uint256 tokenId;
-        uint128 liquidity;
-        uint256 amount0Min;
-        uint256 amount1Min;
-        uint256 deadline;
+    function getPosition() public {
+        nonfungiblePositionManager.positions(_position.tokenId);
     }
-
-    struct CollectParams {
-        uint256 tokenId;
-        address recipient;
-        uint128 amount0Max;
-        uint128 amount1Max;
-    }
-
-    function mint(
-        MintParams memory params
-    )
-        external
-        returns (
-            uint256 tokenId,
-            uint128 liquidity,
-            uint256 amount0,
-            uint256 amount1
-        );
-
-    function increaseLiquidity(
-        IncreaseLiquidityParams params
-    ) external returns (uint128 liquidity, uint256 amount0, uint256 amount1);
-
-    function decreaseLiquidity(
-        DecreaseLiquidityParams params
-    ) external returns (uint256 amount0, uint256 amount1);
-
-    function collect(
-        CollectParams memory params
-    ) external returns (uint256 amount0, uint256 amount1);
-
-    function burn(uint256 tokenId) external;
 }

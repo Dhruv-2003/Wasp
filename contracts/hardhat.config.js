@@ -5,7 +5,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.14",
+        version: "0.8.19",
       },
       {
         version: "0.7.6",
@@ -16,6 +16,7 @@ module.exports = {
         enabled: true,
         runs: 200,
       },
+      viaIR: true,
     },
     overrides: {
       "@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol": {
