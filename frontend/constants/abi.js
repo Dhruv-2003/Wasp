@@ -802,6 +802,368 @@ export const DCAMASTER_ABI = [
   },
 ];
 
+export const RANGEMASTER_ABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_factory",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "_positionManager",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "_swapRouter",
+        type: "address",
+      },
+      {
+        internalType: "contract LinkTokenInterface",
+        name: "_link",
+        type: "address",
+      },
+      {
+        internalType: "contract KeeperRegistrarInterface",
+        name: "_registrar",
+        type: "address",
+      },
+      {
+        internalType: "contract AutomationRegistryInterface",
+        name: "_registry",
+        type: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "tpfOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "cancelTPFOrder",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "tpfOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "cancelUpkeep",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "upKeepId",
+        type: "uint256",
+      },
+    ],
+    name: "cancelUpkeepTask",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "token0",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "token1",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amount0",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "sellPrice",
+        type: "uint256",
+      },
+      {
+        internalType: "uint24",
+        name: "fee",
+        type: "uint24",
+      },
+      {
+        internalType: "uint96",
+        name: "linkAmount",
+        type: "uint96",
+      },
+      {
+        internalType: "bytes",
+        name: "email",
+        type: "bytes",
+      },
+    ],
+    name: "createTPFOrder",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "tpfOrderId",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "tpfOrderId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint96",
+        name: "linkAmount",
+        type: "uint96",
+      },
+    ],
+    name: "depositLinkFunds",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "factory",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "i_link",
+    outputs: [
+      {
+        internalType: "contract LinkTokenInterface",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "i_registrar",
+    outputs: [
+      {
+        internalType: "contract KeeperRegistrarInterface",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "i_registry",
+    outputs: [
+      {
+        internalType: "contract AutomationRegistryInterface",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "positionManager",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "bytes",
+        name: "encryptedEmail",
+        type: "bytes",
+      },
+      {
+        internalType: "address",
+        name: "upkeepContract",
+        type: "address",
+      },
+      {
+        internalType: "uint32",
+        name: "gasLimit",
+        type: "uint32",
+      },
+      {
+        internalType: "address",
+        name: "adminAddress",
+        type: "address",
+      },
+      {
+        internalType: "uint96",
+        name: "amount",
+        type: "uint96",
+      },
+    ],
+    name: "registerAndPredictID",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "swapRouter",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalTPFOrders",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "tpfOrders",
+    outputs: [
+      {
+        internalType: "address",
+        name: "owner",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "token0",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "token1",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amount0",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "amount1",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "sellPrice",
+        type: "uint256",
+      },
+      {
+        internalType: "uint24",
+        name: "fee",
+        type: "uint24",
+      },
+      {
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "upkeepId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "creationTimestamp",
+        type: "uint256",
+      },
+      {
+        internalType: "address",
+        name: "waspWallet",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "tpfOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "withdrawLinkFunds",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
 export const WASPWALLET_ABI = [
   {
     inputs: [

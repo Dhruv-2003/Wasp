@@ -32,11 +32,11 @@ interface IERC20 {
     ) external returns (bool);
 }
 
-contract WaspWallet is AutomationCompatibleInterface {
+contract rangeWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
     ISwapRouter public swapRouter;
-    waspMaster public master;
+    rangeMaster public master;
 
     struct PositionData {
         uint256 tokenId;
@@ -69,7 +69,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         );
         swapRouter = ISwapRouter(_swapRouter);
         _tpfOrder = tpfOrder;
-        master = waspMaster(_master);
+        master = rangeMaster(_master);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -134,16 +134,16 @@ contract WaspWallet is AutomationCompatibleInterface {
         address recepient,
         uint256 amountIn,
         uint24 fee
-    ) internal returns (uint amountOut) {
+    ) external returns (uint amountOut) {
         // Approve the router to spend the token
 
-        IERC20(_tokenIn).approve(address(swapRouter), amountIn);
+        IERC20(tokenIn).approve(address(swapRouter), amountIn);
         // preparing the params
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: tokenIn,
                 tokenOut: tokenOut,
-                fee: poolFee,
+                fee: fee,
                 recipient: recepient,
                 deadline: block.timestamp,
                 amountIn: amountIn,
@@ -183,8 +183,8 @@ contract WaspWallet is AutomationCompatibleInterface {
         /// get the future ticks range for the sellPrice
         int24 tickSpaceRem = tick % tickSpacing;
         int24 meanTick = tick - tickSpaceRem;
-        lowerTick = meanTick - (tickSpacing * 5);
-        upperTick = meanTick + (tickSpacing * 5);
+        lowerTick = meanTick - (tickSpacing * 16);
+        upperTick = meanTick - (tickSpacing * 14);
         // return (lowerTick, upperTick, meanTick, tickSpaceRem);
     }
 
@@ -214,7 +214,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         );
 
         // Approve the position manager
-        IERC20(_tokenIn).approve(address(nonfungiblePositionManager), _amount0);
+        // IERC20(_tokenIn).approve(address(nonfungiblePositionManager), _amount0);
         IERC20(_tokenOut).approve(
             address(nonfungiblePositionManager),
             _amount1
@@ -275,10 +275,10 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     // only Master
     function closePosition() external {
-        // collect fees
-        collectAllFees();
         // decreaseLiquidity to 0
         (uint amount0, uint amount1) = decreaseLiquidity();
+        // collect fees
+        collectAllFees();
         // burn the Position NFT
         burnPosition();
         // Send the funds to the owner

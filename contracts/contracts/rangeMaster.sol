@@ -25,7 +25,7 @@ import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkT
 import "@chainlink/contracts/src/v0.8/AutomationCompatible.sol";
 // import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 
-import "./waspWallet.sol";
+import "./rangeWallet.sol";
 
 struct RegistrationParams {
     string name;
@@ -44,7 +44,7 @@ interface KeeperRegistrarInterface {
     ) external returns (uint256);
 }
 
-contract waspMaster {
+contract rangeMaster {
     /*///////////////////////////////////////////////////////////////
                           Mapping &  State Variables
     //////////////////////////////////////////////////////////////*/
@@ -154,7 +154,7 @@ contract waspMaster {
         require(msg.sender == _tpfOrder.owner, "ONLY CREATOR");
 
         // close the position
-        WaspWallet(_tpfOrder.waspWallet).closePosition();
+        rangeWallet(_tpfOrder.waspWallet).closePosition();
 
         // cancel the upkeep
         i_registry.cancelUpkeep(_tpfOrder.upkeepId);
@@ -165,7 +165,7 @@ contract waspMaster {
         TPFOrder memory tpfOrder,
         address creator
     ) internal returns (address _wallet, uint tokenId) {
-        WaspWallet _waspWallet = new WaspWallet(
+        rangeWallet _waspWallet = new rangeWallet(
             factory,
             positionManager,
             swapRouter,
@@ -188,7 +188,7 @@ contract waspMaster {
         // );
 
         // swapthe Funds , sent to wallet
-        _waspWallet._swapUniswapSingle(
+        uint amountOut = _waspWallet._swapUniswapSingle(
             tpfOrder.token0,
             tpfOrder.token1,
             _wallet,
@@ -203,7 +203,7 @@ contract waspMaster {
             tpfOrder.fee,
             creator,
             0,
-            tpfOrder.amount1,
+            amountOut,
             tpfOrder.sellPrice
         );
     }
