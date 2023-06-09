@@ -263,7 +263,7 @@ contract WaspWallet is AutomationCompatibleInterface {
             memory params = INonfungiblePositionManager
                 .DecreaseLiquidityParams({
                     tokenId: _position.tokenId,
-                    liquidity: 0, // decreasing it to 0
+                    liquidity: _position.liquidity, // decreasing it to 0
                     amount0Min: 0,
                     amount1Min: 0,
                     deadline: block.timestamp
