@@ -27,7 +27,13 @@ const Homepage = () => {
                     <p className="mt-2">Dollar Cost averaging is an investement strategy where the user buys an asset at certain time intervals to reduce risks , the assets is bought at different prices in small amounts to average the out the price.</p>
                     <p className="mt-2 text-2xl">Our Platform streamlines the process with just one click, putting your investing portfolio on auto pilot with &nbsp; <span className="text-blue-600">Chainlink .</span></p>
                   </div>
-                  <div className="px-10 py-2 md:ml-2 bg-white md:mt-0 mt-3 md:w-1/2 w-full rounded-2xl"></div>
+                  <div  onClick={() => router.push("/limitorder")}  className="px-10 py-2 md:ml-2 bg-white border-4 border-white hover:border-yellow-500 cursor-pointer md:mt-0 mt-3 md:w-1/2 w-full rounded-2xl">
+                    <p className="text-black text-4xl">Range <span className="text-yellow-500">Orders</span></p>
+                    <p className="mt-3 text-balck"> Range Orders is a strategy to reduce the impact of volatility by spreading out your assets over time so you're not buying shares at a high point for prices.</p>
+                    <p className="mt-1 text-black">So with our one click solution</p>
+                    <p className="text-black text-2xl">Don't have a <span className="text-yellow-500">FOMO</span> of buying assets on a higher price</p>
+                    <p className=" text-black text-xl">when your friends bought it a lower price .</p>
+                  </div>
                 </div>
               </div>
             </div>

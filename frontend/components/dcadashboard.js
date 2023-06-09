@@ -16,6 +16,8 @@ const DCAdashboard = (props) => {
   const [endAt, setEndAt] = useState([]);
   const [wallet, setWallet] = useState([]);
   const [dcaOrderData, setDcaOrderData] = useState();
+  const [task1id, setTask1Id] = useState([]);
+  const [task2id, setTask2Id] = useState([]);
 
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -79,6 +81,8 @@ const DCAdashboard = (props) => {
       setFreq([data[7].toString()]);
       setEndAt(handleTimePeriod(parseInt(data[6]), parseInt(data[9])));
       setWallet(data[1]);
+      setTask1Id(data[11])
+      setTask2Id(data[12])
       // task1Id https://automation.chain.link/mumbai/data[11]
       // task2Id https://automation.chain.link/mumbai/data[12]
       // flowRate https://app.superfluid.finance/stream/polygon-mumbai/${data[0]}-${data.[1]}-${WMATICx_Address}-0.0
@@ -95,46 +99,58 @@ const DCAdashboard = (props) => {
           <div>
             <p className="text-yellow-500 text-2xl">Dashboard</p>
           </div>
-          <div className="mt-10 w-1/2 border border-white px-3 py-2 rounded-xl">
-            <table className="w-full">
-              <tr className="w-full">
-                <th className="text-yellow-500 text-xl">Order Id</th>
-                <th className="text-yellow-500 text-xl">Flow Rate</th>
-                <th className="text-yellow-500 text-xl">Frequency</th>
-                <th className="text-yellow-500 text-xl">Ending At</th>
-                <th className="text-yellow-500 text-xl">Wallet Address</th>
-              </tr>
+          <div className="mt-10 w-9/12 border border-white px-3 py-2 rounded-xl">
+            <div className="w-full flex justify-evenly">
+              <div className="w-full flex justify-evenly">
+                <p className="text-yellow-500 text-xl">Order Id</p>
+                <p className="text-yellow-500 text-xl">Flow Rate</p>
+                <p className="text-yellow-500 text-xl">Frequency</p>
+                <p className="text-yellow-500 text-xl">Ending At</p>
+                <p className="text-yellow-500 text-xl">Wallet Address</p>
+                <p className="text-yellow-500 text-xl">Task 1 Id</p>
+                <p className="text-yellow-500 text-xl">Task 2 Id</p>
+              </div>
               {dcaOrderData && (
-                <>
-                  {" "}
-                  <tr className="flex flex-col justify-center items-center">
+                <div className="flex justify-evenly w-full">
+                  <div className="flex justify-center">
                     {dcaOrderData.orderId.map((key, value) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
-                  </tr>
-                  <tr className="flex flex-col justify-center items-center">
+                  </div>
+                  <div className="flex justify-center">
                     {dcaOrderData.flowRate.map((key, value) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
-                  </tr>
-                  <tr className="flex flex-col justify-center items-center">
+                  </div>
+                  <div className="flex justify-center">
                     {dcaOrderData.freq.map((key, value) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
-                  </tr>
-                  <tr className="flex flex-col justify-center items-center">
+                  </div>
+                  <div className="flex justify-center">
                     {dcaOrderData.endAt.map((key, value) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
-                  </tr>
-                  <tr className="flex flex-col justify-center items-center">
+                  </div>
+                  <div className="flex justify-center">
                     {dcaOrderData.wallet.map((key, value) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
-                  </tr>
-                </>
+                  </div>
+                  <div className="flex justify-center">
+                    {dcaOrderData.wallet.map((key, value) => {
+                      return <p className="text-white text-lg mt-5">{value}</p>;
+                    })}
+                  </div>
+                  <div className="flex justify-center">
+                  <a className="text-white text-lg mt-5" target="_blank" href={`https://automation.chain.link/mumbai/${task1id}`}>Task 1 ID</a>
+                  </div>
+                  <div className="flex justify-center">
+                  <a className="text-white text-lg mt-5" target="_blank" href={`https://automation.chain.link/mumbai/${task2id}`}>Task 2 ID</a>
+                  </div>
+                </div>
               )}
-            </table>
+            </div>
           </div>
         </div>
       </div>
