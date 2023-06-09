@@ -11,7 +11,11 @@ import {ISuperfluid, ISuperToken, ISuperApp} from "@superfluid-finance/ethereum-
 
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+
+import {AutomationRegistryInterface, State, Config} from "@chainlink/contracts/src/v0.8/interfaces/AutomationRegistryInterface1_2.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+
 import "./dcaMaster.sol";
 
 // Tasks
@@ -19,6 +23,24 @@ import "./dcaMaster.sol";
 // Track a user's portfolio
 // unwrap and Swap
 // pay for Gelato's task - so all the task will be created from this
+
+struct RegistrationParams {
+    string name;
+    bytes encryptedEmail;
+    address upkeepContract;
+    uint32 gasLimit;
+    address adminAddress;
+    bytes checkData;
+    bytes offchainConfig;
+    uint96 amount;
+}
+
+interface KeeperRegistrarInterface {
+    function registerUpkeep(
+        RegistrationParams calldata requestParams
+    ) external returns (uint256);
+}
+
 contract dcaWallet is Ownable, AutomationCompatibleInterface {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
@@ -46,6 +68,11 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
     uint public totalAmountTradedIn;
     uint public totalAmountTradedOut;
 
+    LinkTokenInterface public immutable i_link;
+    // address public immutable registrar;
+    AutomationRegistryInterface public immutable i_registry;
+    KeeperRegistrarInterface public immutable i_registrar;
+
     event dcaTask1Executed(address caller, uint timestamp);
     event dcaSwapExecuted(
         uint amountIn,
@@ -59,12 +86,18 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
         address _swapRouter,
         address _manager,
         uint _dcafOrderId,
-        dCafProtocol.DCAfOrder memory _order
+        dCafProtocol.DCAfOrder memory _order,
+        LinkTokenInterface _link,
+        KeeperRegistrarInterface _registrar,
+        AutomationRegistryInterface _registry
     ) {
         swapRouter = ISwapRouter(_swapRouter);
         dcafManager = _manager;
         dcafOrderId = _dcafOrderId;
         dcafOrder = _order;
+        i_link = _link;
+        i_registrar = _registrar;
+        i_registry = _registry;
     }
 
     modifier onlyManager() {
@@ -158,14 +191,16 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
                            Chainlink Automation
     //////////////////////////////////////////////////////////////*/
 
-   function checkUpkeep(
+    function checkUpkeep(
         bytes calldata checkData
     ) external override returns (bool upkeepNeeded, bytes memory performData) {
-       if(block.timestamp >= dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq){
-        return false;
-       }else{
-        return true;
-       }
+        if (
+            block.timestamp >= dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq
+        ) {
+            upkeepNeeded = true;
+        } else {
+            upkeepNeeded = false;
+        }
         performData = checkData;
     }
 
@@ -180,15 +215,86 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
         beforeSwap();
     }
 
-    function createTask1(uint frequency) external onlyManager returns (bytes32 taskId){
-
-    } 
+    function createTask1(
+        uint frequency,
+        bytes calldata encryptedEmail,
+        uint linkAmount
+    ) external onlyManager returns (uint256 taskId) {
+        taskId = registerAndPredictID(
+            "dcaTask1",
+            encryptedEmail,
+            address(this),
+            999999,
+            address(this),
+            linkAmount / 2,
+            bytes("0x")
+        );
+        dcafOrder.task1Id = taskId;
+    }
 
     function createTask2(
         uint _dcafOrderId,
-        uint timePeriod
-    ) external onlyManager returns (bytes32 taskId) {
+        uint timePeriod,
+        bytes calldata encryptedEmail,
+        uint linkAmount
+    ) external onlyManager returns (uint256 taskId) {
         // encode : abi.encodeCall(dCafProtocol.executeGelatoTask2, (_dCafOrderId))
+        bytes calldata checkData = abi.encode(_dcafOrderId);
+        taskId = registerAndPredictID(
+            "dcaTask2",
+            encryptedEmail,
+            address(dcafManager),
+            999999,
+            address(this),
+            linkAmount / 2,
+            checkData
+        );
+        dcafOrder.task2Id = taskId;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                           Chainlink Automation
+    //////////////////////////////////////////////////////////////*/
+
+    function registerAndPredictID(
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        uint96 amount,
+        bytes calldata checkData
+    ) public returns (uint256) {
+        RegistrationParams memory params = RegistrationParams({
+            name: name,
+            encryptedEmail: encryptedEmail,
+            upkeepContract: upkeepContract,
+            gasLimit: gasLimit,
+            adminAddress: adminAddress,
+            checkData: checkData,
+            offchainConfig: "0x",
+            amount: amount
+        });
+
+        i_link.approve(address(i_registrar), params.amount);
+        uint256 upkeepID = i_registrar.registerUpkeep(params);
+        if (upkeepID != 0) {
+            // DEV - Use the upkeepID however you see fit
+            return upkeepID;
+        } else {
+            revert("auto-approve disabled");
+        }
+    }
+
+    function cancelUpkeep(uint taskId) public {
+        i_registry.cancelUpkeep(taskId);
+    }
+
+    function depositLinkFunds(uint taskId, uint96 linkAmount) public {
+        i_link.transferFrom(msg.sender, address(this), linkAmount);
+        require(linkAmount >= 100000000000000000, "MIN LINK NOT SENT");
+        i_link.approve(address(i_registry), linkAmount);
+        i_registry.addFunds(taskId, linkAmount);
     }
 
     /*///////////////////////////////////////////////////////////////
