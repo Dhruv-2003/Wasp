@@ -80,7 +80,7 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function performUpkeep(bytes calldata performData) external override {
-        require(_clmOrder.tokenId != 0);
+        require(_position.tokenId != 0);
         decreaseLiquidity();
         collectAllFees();
         burnPosition();
@@ -203,13 +203,16 @@ contract WaspWallet is AutomationCompatibleInterface {
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager
             .mint(params);
 
+        _clmOrder.tokenId = tokenId;
+        _clmOrder.waspWallet= address(this);
+
         _position = PositionData({
             tokenId: tokenId,
             liquidity: liquidity,
             lowerTick: _tickLower,
             upperTick: _tickUpper,
-            liqAmount0: (_position.liqAmount0 + amount0),
-            liqAmount1: (_position.liqAmount1 + amount1),
+            liqAmount0: (amount0),
+            liqAmount1: (amount1),
             fees0: (_position.fees0),
             fees1: (_position.fees1),
             currentPositionBurnt: false,
@@ -222,13 +225,13 @@ contract WaspWallet is AutomationCompatibleInterface {
             IERC20(_tokenIn).approve(address(nonfungiblePositionManager), 0);
             uint256 refund0 = _amount0 - amount0;
 
-            IERC20(_tokenIn).transfer(msg.sender, refund0);
+            IERC20(_tokenIn).transfer(owner, refund0);
         }
 
         if (amount1 < _amount1) {
             IERC20(_tokenOut).approve(address(nonfungiblePositionManager), 0);
             uint256 refund1 = _amount1 - amount1;
-            IERC20(_tokenOut).transfer(msg.sender, refund1);
+            IERC20(_tokenOut).transfer(owner, refund1);
         }
 
         // reduce the Approval and return the extra funds
@@ -260,7 +263,7 @@ contract WaspWallet is AutomationCompatibleInterface {
             memory params = INonfungiblePositionManager
                 .DecreaseLiquidityParams({
                     tokenId: _position.tokenId,
-                    liquidity: 0, // decreasing it to 0
+                    liquidity: _position.liquidity, // decreasing it to 0
                     amount0Min: 0,
                     amount1Min: 0,
                     deadline: block.timestamp
