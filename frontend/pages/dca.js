@@ -24,13 +24,13 @@ import { parseEther } from "viem";
 const Dca = () => {
   const [flowRateUnit, setFlowRateUnit] = useState();
   const [timePeriodInput, setTimePeriodInput] = useState("");
-//   const [tokens, setTokens] = useState(false);
-//   const [selectIn, setSelectIn] = useState("Select a Token");
-//   const [selectInLogo, setSelectInLogo] = useState("");
-//   const [dropIn, setDropIn] = useState(false);
-//   const [selectOut, setSelectOut] = useState("Select a Token");
-//   const [selectOutLogo, setSelectOutLogo] = useState("");
-//   const [dropOut, setDropOut] = useState(false);
+  //   const [tokens, setTokens] = useState(false);
+  //   const [selectIn, setSelectIn] = useState("Select a Token");
+  //   const [selectInLogo, setSelectInLogo] = useState("");
+  //   const [dropIn, setDropIn] = useState(false);
+  //   const [selectOut, setSelectOut] = useState("Select a Token");
+  //   const [selectOutLogo, setSelectOutLogo] = useState("");
+  //   const [dropOut, setDropOut] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [frequency, setFrequency] = useState({
     day: 0,
@@ -47,12 +47,12 @@ const Dca = () => {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-//   const dcafProtocolContract = getContract({
-//     address: dcafProtocol_Address,
-//     abi: dcafProtocol_ABI,
-//     publicClient,
-//     walletClient,
-//   });
+  //   const dcafProtocolContract = getContract({
+  //     address: dcafProtocol_Address,
+  //     abi: dcafProtocol_ABI,
+  //     publicClient,
+  //     walletClient,
+  //   });
 
   const dcaf_contract = {
     address: dcafProtocol_Address,
@@ -185,7 +185,36 @@ const Dca = () => {
           <div className="flex flex-col justify-center items-center mx-auto">
             <div className="px-10 py-3 border-2 border-yellow-300 rounded-xl shadow-xl">
               <div className="flex flex-col justify-start">
-                <div className="mt-0">
+                <div>
+                  <p className="text-xl text-yellow-500">Token Pair</p>
+                  <div className="w-full flex justify-around mt-4">
+                    <div className="flex flex-col justify-center items-center">
+                      <div>
+                        <p className="text-white text-lg">Token In</p>
+                      </div>
+                      <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
+                        <Image
+                          src={eth}
+                          className="h-6 w-6 rounded-full mr-2"
+                        />
+                        <p className="text-black">WETH</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-center items-center">
+                      <div>
+                        <p className="text-white text-lg">Token Out</p>
+                      </div>
+                      <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
+                        <Image
+                          src={matic}
+                          className="h-6 w-6 rounded-full mr-2"
+                        />
+                        <p className="text-black">Wrapped Matic</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6">
                   <p className="text-xl text-yellow-500">Flow rate</p>
                   <div className="flex mt-2 align-middle items-center">
                     <input
