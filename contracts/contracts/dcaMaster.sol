@@ -12,6 +12,8 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+
 // SUPERFLUID
 // - Wrap ERC20 tokens -- user has erc20 tokens
 // - Unwrap ERC20 tokens -- user has super tokenAddress
@@ -41,31 +43,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
-struct RegistrationParams {
-    string name;
-    bytes encryptedEmail;
-    address upkeepContract;
-    uint32 gasLimit;
-    address adminAddress;
-    bytes checkData;
-    bytes offchainConfig;
-    uint96 amount;
-}
-
-interface KeeperRegistrarInterface {
-    function registerUpkeep(
-        RegistrationParams calldata requestParams
-    ) external returns (uint256);
-}
-
-contract dCafProtocol is AutomateTaskCreator, Ownable {
+contract dCafProtocol is Ownable, AutomationCompatibleInterface {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
     uint160 sqrtPriceLimitX96 = 0;
 
     // mapping(address => bool) public accountList;
-    address payable public automateAddress;
 
     // ISuperToken public token;
 
@@ -81,8 +65,8 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         uint256 lastTradeTimeStamp;
         uint256 creationTimeStamp;
         bool activeStatus;
-        bytes32 task1Id;
-        bytes32 task2Id;
+        uint256 task1Id;
+        uint256 task2Id;
     }
 
     uint public totaldcafOrders;
@@ -93,8 +77,8 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address dcaWallet,
         address creator,
         address superToken,
-        bytes32 task1Id,
-        bytes32 task2Id
+        uint256 task1Id,
+        uint256 task2Id
     );
     event dcaOrderCancelled(uint dcafOrderId);
     event dcaTask2Executed(uint dcafOrderId, uint timeStamp, address caller);
@@ -104,24 +88,16 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     AutomationRegistryInterface public immutable i_registry;
     KeeperRegistrarInterface public immutable i_registrar;
 
-
     constructor(
-        address payable _automate,
-        address _fundsOwner,
-        address _swapRouter, 
-        address _factory,
-        address _positionManager,
+        address _swapRouter,
         LinkTokenInterface _link,
         KeeperRegistrarInterface _registrar,
         AutomationRegistryInterface _registry
     ) {
-        factory = _factory;
-        positionManager = _positionManager;
         i_link = _link;
         i_registrar = _registrar;
         i_registry = _registry;
         swapRouter = ISwapRouter(_swapRouter);
-        automateAddress = _automate;
     }
 
     modifier onlyCreator(uint dcafOrderId) {
@@ -151,7 +127,9 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         address tokenOut,
         int96 flowRate,
         uint timePeriod, // only in sec
-        uint dcafFreq // only in sec
+        uint dcafFreq, // only in sec
+        uint96 linkAmount,
+        bytes calldata encryptedEmail
     ) external payable returns (uint dcafOrderID) {
         // verify superToken , if valid or not
         totaldcafOrders += 1;
@@ -169,25 +147,27 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
             lastTradeTimeStamp: block.timestamp,
             creationTimeStamp: block.timestamp,
             activeStatus: true,
-            task1Id: bytes32(0),
-            task2Id: bytes32(0)
+            task1Id: 0,
+            task2Id: 0
         });
 
         // create new dcaWallet for user
         dcaWallet _wallet = new dcaWallet(
-            automateAddress,
-            msg.sender,
             address(swapRouter),
             address(this),
             dcafOrderID,
-            _order
+            _order,
+            i_link,
+            i_registrar,
+            i_registry
         );
         // storing the record
         _order.wallet = address(_wallet);
 
-        // deposit some fees
-        require(msg.value > 0, "SEND FEES FOR GELATO");
-        _wallet.depositGelatoFees{value: msg.value}();
+        // // deposit some fees
+        // require(msg.value > 0, "SEND FEES FOR GELATO");
+        // _wallet.depositGelatoFees{value: msg.value}();
+        i_link.transferFrom(msg.sender, address(_wallet), linkAmount);
 
         //createStream to the wallet
         createStreamToContract(
@@ -200,10 +180,19 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         // deposit fees for Gelato in wallet
 
         // Task 1 to exectue the dcafOrder on the freq in the wallet
-        bytes32 task1Id = _wallet.createTask1(dcafFreq);
+        uint256 task1Id = _wallet.createTask1(
+            dcafFreq,
+            encryptedEmail,
+            linkAmount
+        );
         _order.task1Id = task1Id;
         // Task 2 to close the dcafOrder later in the wallet
-        bytes32 task2Id = _wallet.createTask2(dcafOrderID, timePeriod);
+        uint256 task2Id = _wallet.createTask2(
+            dcafOrderID,
+            timePeriod,
+            encryptedEmail,
+            linkAmount
+        );
         _order.task2Id = task2Id;
         dcafOrders[dcafOrderID] = _order;
 
@@ -232,8 +221,8 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
         _dcafOrder.activeStatus = false;
 
         // cancel Task1 & 2 in the wallet contract
-        dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task1Id);
-        dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task2Id);
+        dcaWallet(_dcafOrder.wallet).cancelUpkeep(_dcafOrder.task1Id);
+        dcaWallet(_dcafOrder.wallet).cancelUpkeep(_dcafOrder.task2Id);
 
         // cancel the stream incoming
         deleteFlowToContract(
@@ -258,8 +247,24 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
                            Extras
     //////////////////////////////////////////////////////////////*/
 
-    // Add restrictions
-    function executeGelatoTask2(uint dcafOrderId) public validId(dcafOrderId) {
+    function checkUpkeep(
+        bytes calldata checkData
+    ) external override returns (bool upkeepNeeded, bytes memory performData) {
+        uint dcafOrderId = abi.decode(checkData, (uint));
+        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+        if (
+            block.timestamp >=
+            _dcafOrder.creationTimeStamp + _dcafOrder.timePeriod
+        ) {
+            upkeepNeeded = true;
+        } else {
+            upkeepNeeded = false;
+        }
+        performData = checkData;
+    }
+
+    function performUpkeep(bytes calldata performData) external override {
+        uint dcafOrderId = abi.decode(performData, (uint));
         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(_dcafOrder.activeStatus, "Already Cancelled");
         require(
@@ -280,12 +285,12 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
 
     function cancelDCATask(
         address _wallet,
-        bytes32 task1Id,
+        uint task1Id,
         address creator,
         address superToken
     ) internal {
         // cancel Task1 in the wallet contract
-        dcaWallet(_wallet).cancelTask(task1Id);
+        dcaWallet(_wallet).cancelUpkeep(task1Id);
 
         // cancel the stream incoming
         deleteFlowToContract(superToken, creator, _wallet);
@@ -445,84 +450,6 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     // }
 
     // updating stream permissions
-
-    /*///////////////////////////////////////////////////////////////
-                           Chainlink Automation
-    //////////////////////////////////////////////////////////////*/
-
-    function registerAndPredictID(
-        string memory name,
-        bytes calldata encryptedEmail,
-        address upkeepContract,
-        uint32 gasLimit,
-        address adminAddress,
-        uint96 amount
-    ) public returns (uint256) {
-        RegistrationParams memory params = RegistrationParams({
-            name: name,
-            encryptedEmail: encryptedEmail,
-            upkeepContract: upkeepContract,
-            gasLimit: gasLimit,
-            adminAddress: adminAddress,
-            checkData: "0x",
-            offchainConfig: "0x",
-            amount: amount
-        });
-
-        i_link.approve(address(i_registrar), params.amount);
-        uint256 upkeepID = i_registrar.registerUpkeep(params);
-        if (upkeepID != 0) {
-            // DEV - Use the upkeepID however you see fit
-            return upkeepID;
-        } else {
-            revert("auto-approve disabled");
-        }
-    }
-
-    function depositGelatoFees() external payable {
-        _depositFunds(msg.value, ETH);
-    }
-
-    // address(0) for ETH
-    function withdrawGealtoFees(uint256 _amount, address _token) external {
-        withdrawFunds(_amount, _token);
-    }
-
-    function cancelTask(bytes32 taskId) internal {
-        /// add restrictions
-        _cancelTask(taskId);
-    }
-
-    // the args will be decided on the basis of the web3 function we create and the task we add
-    // @note - not ready to use , as we need to use a differnt Automate Contract for that
-    // function createWeb3FunctionTask(
-    //     string memory _web3FunctionHash,
-    //     bytes calldata _web3FunctionArgsHex
-    // ) internal {
-    //     ModuleData memory moduleData = ModuleData({
-    //         modules: new Module[](2),
-    //         args: new bytes[](2)
-    //     });
-
-    //     moduleData.modules[0] = Module.PROXY;
-    //     moduleData.modules[1] = Module.WEB3_FUNCTION;
-
-    //     moduleData.args[0] = _proxyModuleArg();
-    //     moduleData.args[1] = _web3FunctionModuleArg(
-    //         _web3FunctionHash,
-    //         _web3FunctionArgsHex
-    //     );
-
-    //     bytes32 id = _createTask(
-    //         address(this),
-    //         abi.encode(this.executeGelatoTask.selector),
-    //         moduleData,
-    //         address(0)
-    //     );
-    //     /// log the event with the Gelaot Task ID
-    //     /// Here we just pass the function selector we are looking to execute
-    // }
-
     /*///////////////////////////////////////////////////////////////
                            Uniswap functions
     //////////////////////////////////////////////////////////////*/
