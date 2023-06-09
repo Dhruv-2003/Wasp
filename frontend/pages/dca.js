@@ -16,6 +16,7 @@ import { parseEther, encodeAbiParameters, parseAbiParameters } from "viem";
 import DCAdashboard from "../components/dcadashboard";
 
 const Dca = () => {
+  const [dcaOrderId, setDcaOrderId] = useState(1);
   const [flowRateUnit, setFlowRateUnit] = useState();
   const [timePeriodInput, setTimePeriodInput] = useState("");
   // const [tokens, setTokens] = useState(false);
@@ -205,14 +206,14 @@ const Dca = () => {
         account: address,
       });
       const tx = await walletClient.writeContract(request);
-      sendNotify("createDCAOrder sent for confirmation ..", tx);
+      // sendNotify("createDCAOrder sent for confirmation ..", tx);
       console.log(tx);
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: tx,
       });
       console.log(transaction);
       setIsLoading(false);
-      sendNotify("Order Created Successfully", tx);
+      // sendNotify("Order Created Successfully", tx);
     } catch (error) {
       console.log(error);
       window.alert(error);
@@ -386,7 +387,7 @@ const Dca = () => {
                 </div>
               </div>
             </div>
-            <DCAdashboard dcaOrderId={1} />
+            <DCAdashboard dcaOrderId={dcaOrderId} />
           </div>
         </div>
       </div>

@@ -50,3 +50,12 @@ clm exchange - 0x255Daf3418530C2f05A75c1AF00C3a97fE0c14f1
 0xF89ff24A29b3A2f7c3d3Aa3a243DC3F8A6951daA
 
 https://dashboard.tenderly.co/tx/mumbai/0x02a272dba7a8533a207eca24b1823bd0173e1bf5f19ae02a87ae19a53ec6bb05
+
+createCLMOrder
+https://mumbai.polygonscan.com/tx/0x47eb320cdf059593c34a6d97d43c29ae2b64db8ea550b539ec412a172e0d28dc
+
+decreseLiquidity
+https://mumbai.polygonscan.com/tx/0x544101f23ef7ed9e819fcb9aed29b092bc10cca72ae53aa4475c5e9e63067362
+
+collectFees
+https://mumbai.polygonscan.com/tx/0x045efe6b30fdcead480f4945bd8996f24a2206b4070428b0a92c4e6cb323b772
