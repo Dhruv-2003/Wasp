@@ -3,10 +3,11 @@ pragma solidity ^0.8.19;
 import {INonfungiblePositionManager} from "./interfaces/INonFungiblePositionManager.sol";
 import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
+import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 // import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import "./waspMaster.sol";
+import "./rangeMaster.sol";
 
 // - checkUpkeep
 // - performUpkeep
@@ -34,6 +35,9 @@ interface IERC20 {
 contract WaspWallet is AutomationCompatibleInterface {
     IUniswapV3Factory public factory;
     INonfungiblePositionManager public nonfungiblePositionManager;
+    ISwapRouter public swapRouter;
+    waspMaster public master;
+
     struct PositionData {
         uint256 tokenId;
         uint128 liquidity;
@@ -50,18 +54,22 @@ contract WaspWallet is AutomationCompatibleInterface {
 
     PositionData public _position;
 
-    waspMaster.CLMOrder public _clmOrder;
+    rangeMaster.TPFOrder public _tpfOrder;
 
     constructor(
         address _factory,
         address _positionManager,
-        waspMaster.CLMOrder memory clmOrder
+        address _swapRouter,
+        rangeMaster.TPFOrder memory tpfOrder,
+        address _master
     ) {
         factory = IUniswapV3Factory(_factory);
         nonfungiblePositionManager = INonfungiblePositionManager(
             _positionManager
         );
-        _clmOrder = clmOrder;
+        swapRouter = ISwapRouter(_swapRouter);
+        _tpfOrder = tpfOrder;
+        master = waspMaster(_master);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -77,9 +85,9 @@ contract WaspWallet is AutomationCompatibleInterface {
         returns (bool upkeepNeeded, bytes memory performData)
     {
         upkeepNeeded = checkConditions(
-            _clmOrder.token0,
-            _clmOrder.token1,
-            _clmOrder.fee
+            _tpfOrder.token0,
+            _tpfOrder.token1,
+            _tpfOrder.fee
         );
         performData = checkData;
     }
@@ -89,15 +97,8 @@ contract WaspWallet is AutomationCompatibleInterface {
         decreaseLiquidity();
         collectAllFees();
         burnPosition();
-        /// mint new position
-        mintPosition(
-            _clmOrder.token0,
-            _clmOrder.token1,
-            _clmOrder.fee,
-            _clmOrder.owner,
-            _position.liqAmount0,
-            _position.liqAmount1
-        );
+        // master.cancelUpkeep(_tpfOrder);
+        // need to cancel the Upkeep once done
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -114,11 +115,9 @@ contract WaspWallet is AutomationCompatibleInterface {
             _tokenOut,
             fee
         );
-        // (int24 _lowerTick,int24 _upperTick) = getRangeTicks(_tokenIn,_tokenOut, fee);
-        // require(_lowerTick < _upperTick);
-        if (
-            _position.lowerTick <= _newtick && _newtick <= _position.upperTick
-        ) {
+
+        // only if the spot price has passed the upperTick range
+        if (_newtick >= _position.upperTick) {
             return true;
         } else {
             return false;
@@ -128,6 +127,33 @@ contract WaspWallet is AutomationCompatibleInterface {
     /*///////////////////////////////////////////////////////////////
                            Uniswap functions
     //////////////////////////////////////////////////////////////*/
+
+    function _swapUniswapSingle(
+        address tokenIn,
+        address tokenOut,
+        address recepient,
+        uint256 amountIn,
+        uint24 fee
+    ) internal returns (uint amountOut) {
+        // Approve the router to spend the token
+
+        IERC20(_tokenIn).approve(address(swapRouter), amountIn);
+        // preparing the params
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+            .ExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                fee: poolFee,
+                recipient: recepient,
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = swapRouter.exactInputSingle(params);
+    }
 
     function getPrice(
         address tokenIn,
@@ -145,13 +171,16 @@ contract WaspWallet is AutomationCompatibleInterface {
     function getRangeTicks(
         address _tokenIn,
         address _tokenOut,
-        uint24 fee
+        uint24 fee,
+        uint sellPrice
     ) public view returns (int24 lowerTick, int24 upperTick) {
         (uint160 _sqrtPriceX96, int24 tick, int24 tickSpacing) = getPrice(
             _tokenIn,
             _tokenOut,
             fee
         );
+
+        /// get the future ticks range for the sellPrice
         int24 tickSpaceRem = tick % tickSpacing;
         int24 meanTick = tick - tickSpaceRem;
         lowerTick = meanTick - (tickSpacing * 5);
@@ -168,21 +197,23 @@ contract WaspWallet is AutomationCompatibleInterface {
         address _tokenOut,
         uint24 fee,
         address owner,
-        uint256 _amount0,
-        uint256 _amount1
+        uint256 _amount0, // will be set to 0
+        uint256 _amount1,
+        uint sellPrice
     )
         public
         payable
         returns (uint256 tokenId, uint256 amount0, uint256 amount1)
     {
+        /// finds the future tick for the sellPrice user has set
         (int24 _tickLower, int24 _tickUpper) = getRangeTicks(
             _tokenIn,
             _tokenOut,
-            fee
+            fee,
+            sellPrice
         );
 
         // Approve the position manager
-
         IERC20(_tokenIn).approve(address(nonfungiblePositionManager), _amount0);
         IERC20(_tokenOut).approve(
             address(nonfungiblePositionManager),
@@ -208,8 +239,8 @@ contract WaspWallet is AutomationCompatibleInterface {
         (tokenId, liquidity, amount0, amount1) = nonfungiblePositionManager
             .mint(params);
 
-        _clmOrder.tokenId = tokenId;
-        _clmOrder.waspWallet = address(this);
+        _tpfOrder.tokenId = tokenId;
+        _tpfOrder.waspWallet = address(this);
 
         _position = PositionData({
             tokenId: tokenId,
@@ -226,12 +257,12 @@ contract WaspWallet is AutomationCompatibleInterface {
         });
 
         // Remove allowance and refund in both assets.
-        if (amount0 < _amount0) {
-            IERC20(_tokenIn).approve(address(nonfungiblePositionManager), 0);
-            uint256 refund0 = _amount0 - amount0;
+        // if (amount0 < _amount0) {
+        //     IERC20(_tokenIn).approve(address(nonfungiblePositionManager), 0);
+        //     uint256 refund0 = _amount0 - amount0;
 
-            IERC20(_tokenIn).transfer(owner, refund0);
-        }
+        //     IERC20(_tokenIn).transfer(owner, refund0);
+        // }
 
         if (amount1 < _amount1) {
             IERC20(_tokenOut).approve(address(nonfungiblePositionManager), 0);
@@ -294,7 +325,7 @@ contract WaspWallet is AutomationCompatibleInterface {
         INonfungiblePositionManager.CollectParams
             memory params = INonfungiblePositionManager.CollectParams({
                 tokenId: _position.tokenId,
-                recipient: _clmOrder.owner,
+                recipient: _tpfOrder.owner,
                 amount0Max: type(uint128).max,
                 amount1Max: type(uint128).max
             });
@@ -321,9 +352,9 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function _sendToOwner(uint256 amount0, uint256 amount1) internal {
-        IERC20(_clmOrder.token0).transfer(_clmOrder.owner, amount0);
+        IERC20(_tpfOrder.token0).transfer(_tpfOrder.owner, amount0);
 
-        IERC20(_clmOrder.token1).transfer(_clmOrder.owner, amount1);
+        IERC20(_tpfOrder.token1).transfer(_tpfOrder.owner, amount1);
     }
 
     function getPosition() public view {

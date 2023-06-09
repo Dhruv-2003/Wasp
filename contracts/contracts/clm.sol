@@ -24,7 +24,7 @@ contract clmExchange {
     INonfungiblePositionManager public nonfungiblePositionManager;
 
     uint public tokenId;
-    uint public liquidity;
+    uint128 public liquidity;
     address public token0;
     address public token1;
     address public owner;
@@ -151,7 +151,7 @@ contract clmExchange {
             memory params = INonfungiblePositionManager
                 .DecreaseLiquidityParams({
                     tokenId: tokenId,
-                    liquidity: 0, // decreasing it to 0
+                    liquidity: liquidity, // decreasing it to 0
                     amount0Min: 0,
                     amount1Min: 0,
                     deadline: block.timestamp
