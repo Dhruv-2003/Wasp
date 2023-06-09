@@ -79,10 +79,11 @@ const DCAdashboard = (props) => {
       setOrderId([]);
       setFlowRate([formatEther(data[5])]);
       setFreq([data[7].toString()]);
-      setEndAt(handleTimePeriod(parseInt(data[6]), parseInt(data[9])));
-      setWallet(data[1]);
-      setTask1Id(data[11])
-      setTask2Id(data[12])
+      setEndAt([handleTimePeriod(parseInt(data[6]), parseInt(data[9]))]);
+      setWallet([data[1]]);
+      setTask1Id([data[11]]);
+      setTask2Id([data[12]]);
+      setDcaOrderData(true);
       // task1Id https://automation.chain.link/mumbai/data[11]
       // task2Id https://automation.chain.link/mumbai/data[12]
       // flowRate https://app.superfluid.finance/stream/polygon-mumbai/${data[0]}-${data.[1]}-${WMATICx_Address}-0.0
@@ -113,40 +114,56 @@ const DCAdashboard = (props) => {
               {dcaOrderData && (
                 <div className="flex justify-evenly w-full">
                   <div className="flex justify-center">
-                    {dcaOrderData.orderId.map((key, value) => {
+                    {orderId.map((value, key) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
-                    {dcaOrderData.flowRate.map((key, value) => {
+                    {flowRate.map((value, key) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
-                    {dcaOrderData.freq.map((key, value) => {
+                    {freq.map((value, key) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
-                    {dcaOrderData.endAt.map((key, value) => {
+                    {endAt.map((value, key) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
-                    {dcaOrderData.wallet.map((key, value) => {
+                    {wallet.map((value, key) => {
+                      return (
+                        <p className="text-white text-lg mt-5">
+                          {value.slice(0, 4)}..
+                        </p>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center">
+                    {wallet.map((value, key) => {
                       return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
-                    {dcaOrderData.wallet.map((key, value) => {
-                      return <p className="text-white text-lg mt-5">{value}</p>;
-                    })}
+                    <a
+                      className="text-white text-lg mt-5"
+                      target="_blank"
+                      href={`https://automation.chain.link/mumbai/${task1id}`}
+                    >
+                      Task 1 ID
+                    </a>
                   </div>
                   <div className="flex justify-center">
-                  <a className="text-white text-lg mt-5" target="_blank" href={`https://automation.chain.link/mumbai/${task1id}`}>Task 1 ID</a>
-                  </div>
-                  <div className="flex justify-center">
-                  <a className="text-white text-lg mt-5" target="_blank" href={`https://automation.chain.link/mumbai/${task2id}`}>Task 2 ID</a>
+                    <a
+                      className="text-white text-lg mt-5"
+                      target="_blank"
+                      href={`https://automation.chain.link/mumbai/${task2id}`}
+                    >
+                      Task 2 ID
+                    </a>
                   </div>
                 </div>
               )}
