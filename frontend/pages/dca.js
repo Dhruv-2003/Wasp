@@ -386,7 +386,7 @@ const Dca = () => {
                 </div>
               </div>
             </div>
-            <DCAdashboard />
+            <DCAdashboard dcaOrderId={1} />
           </div>
         </div>
       </div>
