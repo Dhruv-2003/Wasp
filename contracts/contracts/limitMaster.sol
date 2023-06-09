@@ -12,6 +12,8 @@ import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+
 // SUPERFLUID
 // - Wrap ERC20 tokens -- user has erc20 tokens
 // - Unwrap ERC20 tokens -- user has super tokenAddress
@@ -41,7 +43,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
-contract limitCafProtocol is AutomateTaskCreator, Ownable {
+contract limitCafProtocol is AutomationCompatibleInterface, Ownable {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
@@ -82,13 +84,21 @@ contract limitCafProtocol is AutomateTaskCreator, Ownable {
     event dcaOrderCancelled(uint dcafOrderId);
     event dcaTask2Executed(uint dcafOrderId, uint timeStamp, address caller);
 
+    LinkTokenInterface public immutable i_link;
+    // address public immutable registrar;
+    AutomationRegistryInterface public immutable i_registry;
+    KeeperRegistrarInterface public immutable i_registrar;
+
     constructor(
-        address payable _automate,
-        address _fundsOwner,
-        address _swapRouter
-    ) AutomateTaskCreator(_automate, _fundsOwner) {
+        address _swapRouter,
+        LinkTokenInterface _link,
+        KeeperRegistrarInterface _registrar,
+        AutomationRegistryInterface _registry
+    ) {
         swapRouter = ISwapRouter(_swapRouter);
-        automateAddress = _automate;
+        i_link = _link;
+        i_registrar = _registrar;
+        i_registry = _registry;
     }
 
     modifier onlyCreator(uint dcafOrderId) {
@@ -226,7 +236,28 @@ contract limitCafProtocol is AutomateTaskCreator, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     // Add restrictions
-    function executeGelatoTask2(uint dcafOrderId) public validId(dcafOrderId) {
+    // function executeGelatoTask2(uint dcafOrderId) public validId(dcafOrderId) {
+    //     DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+    //     require(_dcafOrder.activeStatus, "Already Cancelled");
+    //     require(
+    //         block.timestamp >
+    //             _dcafOrder.creationTimeStamp + _dcafOrder.timePeriod,
+    //         "Time Period not crossed"
+    //     );
+    //     _dcafOrder.activeStatus = false;
+    //     cancelDCATask(
+    //         _dcafOrder.wallet,
+    //         _dcafOrder.task1Id,
+    //         _dcafOrder.creator,
+    //         _dcafOrder.superToken
+    //     );
+
+    //     emit dcaTask2Executed(dcafOrderId, block.timestamp, msg.sender);
+    // }
+
+    function performUpKeep(
+        bytes calldata checkData
+    ) external override returns (bool upkeepNeeded, bytes memory performData) {
         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(_dcafOrder.activeStatus, "Already Cancelled");
         require(
@@ -245,14 +276,20 @@ contract limitCafProtocol is AutomateTaskCreator, Ownable {
         emit dcaTask2Executed(dcafOrderId, block.timestamp, msg.sender);
     }
 
+    function checkUpkeep(
+        bytes calldata checkData
+    ) external override returns (bool upkeepNeeded, bytes memory performData) {
+        performData = checkData;
+    }
+
     function cancelDCATask(
         address _wallet,
-        bytes32 task1Id,
+        uint task1Id,
         address creator,
         address superToken
     ) internal {
         // cancel Task1 in the wallet contract
-        dcaWallet(_wallet).cancelTask(task1Id);
+        dcaWallet(_wallet).cancelUpkeep(task1Id);
 
         // cancel the stream incoming
         deleteFlowToContract(superToken, creator, _wallet);
