@@ -15,6 +15,9 @@ import {
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
 import { parseEther, encodeAbiParameters, parseAbiParameters } from "viem";
+import matic from "../public/polygon-token.svg";
+import eth from "../public/ethereum.svg";
+import Image from "next/image";
 // import { Spinner } from "@chakra-ui/react";
 // import { useToast } from "@chakra-ui/react";
 
@@ -207,32 +210,34 @@ const Clmmmanager = () => {
   };
   return (
     <div className="w-screen">
-      <div className="mt-20 flex flex-col justify-center items-center mx-3 md:mx-0">
+      <div className="mt-10 flex flex-col justify-center items-center mx-3 md:mx-0">
         <div className="md:w-1/3 w-full border-4 border-yellow-500 px-4 py-3 rounded-2xl">
           <div className="flex flex-col">
             <div>
-              <p className="mx-3">Token Pair</p>
+              <p className="mx-3 text-yellow-500 text-xl">Token Pair</p>
             </div>
             <div className="w-full flex justify-around mt-4">
               <div className="flex flex-col justify-center items-center">
                 <div>
-                  <p>Token 1</p>
+                  <p className="text-white text-lg">Token 1</p>
                 </div>
-                <div className="flex align-middle px-3 py-1 border border-white rounded-xl mt-2">
-                  <p>WMATIC</p>
+                <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
+                  <Image src={eth} className="h-6 w-6 rounded-full mr-2"/>
+                  <p className="text-black">WETH</p>
                 </div>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col justify-center items-center">
                 <div>
-                  <p>Token 2</p>
+                  <p className="text-white text-lg">Token 2</p>
                 </div>
-                <div className="flex align-middle px-3 py-1 border border-white rounded-xl mt-2">
-                  <p>WETH</p>
+                <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
+                  <Image src={matic} className="h-6 w-6 rounded-full mr-2"/>
+                  <p className="text-black">Matic</p>
                 </div>
               </div>
             </div>
             <div className="mx-3 mt-5">
-              <p>Amount 0</p>
+              <p className="text-yellow-500 text-xl">Amount 0</p>
             </div>
             <div className="mt-3 mx-3">
               <input
@@ -243,7 +248,7 @@ const Clmmmanager = () => {
               ></input>
             </div>
             <div className="mx-3 mt-5">
-              <p>Amount 1</p>
+              <p className="text-yellow-500 text-xl">Amount 1</p>
             </div>
             <div className="mt-3 mx-3">
               <input
@@ -253,8 +258,8 @@ const Clmmmanager = () => {
                 className="w-full px-3 py-1 rounded-xl text-black"
               ></input>
             </div>
-            <div className="mx-3 mt-5">
-              <p>Fees</p>
+            <div className="mx-3 text-yellow-500 text-xl mt-5">
+              <p className="text-yellow-500">Fees</p>
             </div>
             <div className="mt-3 mx-3">
               <input
@@ -264,8 +269,8 @@ const Clmmmanager = () => {
                 onChange={(e) => setFeeRate(e.target.value)}
               ></input>
             </div>
-            <div className="mx-3 mt-5">
-              <p>Link amount</p>
+            <div className="mx-3 text-yellow-500 text-xl mt-5">
+              <p className="text-yellow-500">Link amount</p>
             </div>
             <div className="mt-3 mx-3">
               <input
@@ -275,8 +280,8 @@ const Clmmmanager = () => {
                 onChange={(e) => setLinkAmount(e.target.value)}
               ></input>
             </div>
-            <div className="mx-3 mt-5">
-              <p>Email-id</p>
+            <div className="mx-3 text-yellow-500 text-xl mt-5">
+              <p className="text-yellow-500">Email-id</p>
             </div>
             <div className="mt-3 mx-3">
               <input

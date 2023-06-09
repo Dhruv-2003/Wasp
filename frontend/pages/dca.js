@@ -226,7 +226,36 @@ const Dca = () => {
           <div className="flex flex-col justify-center items-center mx-auto">
             <div className="px-10 py-3 border-2 border-yellow-300 rounded-xl shadow-xl">
               <div className="flex flex-col justify-start">
-                <div className="mt-0">
+                <div>
+                  <p className="text-xl text-yellow-500">Token Pair</p>
+                  <div className="w-full flex justify-around mt-4">
+                    <div className="flex flex-col justify-center items-center">
+                      <div>
+                        <p className="text-white text-lg">Token In</p>
+                      </div>
+                      <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
+                        <Image
+                          src={eth}
+                          className="h-6 w-6 rounded-full mr-2"
+                        />
+                        <p className="text-black">WETH</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col justify-center items-center">
+                      <div>
+                        <p className="text-white text-lg">Token Out</p>
+                      </div>
+                      <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
+                        <Image
+                          src={matic}
+                          className="h-6 w-6 rounded-full mr-2"
+                        />
+                        <p className="text-black">Wrapped Matic</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6">
                   <p className="text-xl text-yellow-500">Flow rate</p>
                   <div className="flex mt-2 align-middle items-center">
                     <input
