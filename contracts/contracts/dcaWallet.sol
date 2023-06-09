@@ -109,18 +109,6 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
                            Extras
     //////////////////////////////////////////////////////////////*/
 
-    // function executeGelatoTask1() public {
-    //     // DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
-    //     require(dcafOrder.activeStatus, "Not Active");
-    //     require(
-    //         block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
-    //         "Freq time not passed"
-    //     );
-    //     emit dcaTask1Executed(msg.sender, block.timestamp);
-    //     // exectue beforeSwap
-    //     beforeSwap();
-    // }
-
     function beforeSwap() internal {
         // unwrap the token
         address superToken = dcafOrder.superToken;

@@ -43,18 +43,13 @@ import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.s
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
-contract dCafProtocol is
-    AutomateTaskCreator,
-    Ownable,
-    AutomationCompatibleInterface
-{
+contract dCafProtocol is Ownable, AutomationCompatibleInterface {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
     uint160 sqrtPriceLimitX96 = 0;
 
     // mapping(address => bool) public accountList;
-    address payable public automateAddress;
 
     // ISuperToken public token;
 
@@ -94,22 +89,15 @@ contract dCafProtocol is
     KeeperRegistrarInterface public immutable i_registrar;
 
     constructor(
-        address payable _automate,
-        address _fundsOwner,
         address _swapRouter,
-        address _factory,
-        address _positionManager,
         LinkTokenInterface _link,
         KeeperRegistrarInterface _registrar,
         AutomationRegistryInterface _registry
     ) {
-        factory = _factory;
-        positionManager = _positionManager;
         i_link = _link;
         i_registrar = _registrar;
         i_registry = _registry;
         swapRouter = ISwapRouter(_swapRouter);
-        automateAddress = _automate;
     }
 
     modifier onlyCreator(uint dcafOrderId) {
@@ -233,8 +221,8 @@ contract dCafProtocol is
         _dcafOrder.activeStatus = false;
 
         // cancel Task1 & 2 in the wallet contract
-        dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task1Id);
-        dcaWallet(_dcafOrder.wallet).cancelTask(_dcafOrder.task2Id);
+        dcaWallet(_dcafOrder.wallet).cancelUpkeep(_dcafOrder.task1Id);
+        dcaWallet(_dcafOrder.wallet).cancelUpkeep(_dcafOrder.task2Id);
 
         // cancel the stream incoming
         deleteFlowToContract(
@@ -295,34 +283,14 @@ contract dCafProtocol is
         emit dcaTask2Executed(dcafOrderId, block.timestamp, msg.sender);
     }
 
-    // Add restrictions
-    function executeGelatoTask2(uint dcafOrderId) public validId(dcafOrderId) {
-        DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
-        require(_dcafOrder.activeStatus, "Already Cancelled");
-        require(
-            block.timestamp >
-                _dcafOrder.creationTimeStamp + _dcafOrder.timePeriod,
-            "Time Period not crossed"
-        );
-        _dcafOrder.activeStatus = false;
-        cancelDCATask(
-            _dcafOrder.wallet,
-            _dcafOrder.task1Id,
-            _dcafOrder.creator,
-            _dcafOrder.superToken
-        );
-        dcafOrders[dcafOrderId] = _dcafOrder;
-        emit dcaTask2Executed(dcafOrderId, block.timestamp, msg.sender);
-    }
-
     function cancelDCATask(
         address _wallet,
-        bytes32 task1Id,
+        uint task1Id,
         address creator,
         address superToken
     ) internal {
         // cancel Task1 in the wallet contract
-        dcaWallet(_wallet).cancelTask(task1Id);
+        dcaWallet(_wallet).cancelUpkeep(task1Id);
 
         // cancel the stream incoming
         deleteFlowToContract(superToken, creator, _wallet);
@@ -482,37 +450,6 @@ contract dCafProtocol is
     // }
 
     // updating stream permissions
-
-    // the args will be decided on the basis of the web3 function we create and the task we add
-    // @note - not ready to use , as we need to use a differnt Automate Contract for that
-    // function createWeb3FunctionTask(
-    //     string memory _web3FunctionHash,
-    //     bytes calldata _web3FunctionArgsHex
-    // ) internal {
-    //     ModuleData memory moduleData = ModuleData({
-    //         modules: new Module[](2),
-    //         args: new bytes[](2)
-    //     });
-
-    //     moduleData.modules[0] = Module.PROXY;
-    //     moduleData.modules[1] = Module.WEB3_FUNCTION;
-
-    //     moduleData.args[0] = _proxyModuleArg();
-    //     moduleData.args[1] = _web3FunctionModuleArg(
-    //         _web3FunctionHash,
-    //         _web3FunctionArgsHex
-    //     );
-
-    //     bytes32 id = _createTask(
-    //         address(this),
-    //         abi.encode(this.executeGelatoTask.selector),
-    //         moduleData,
-    //         address(0)
-    //     );
-    //     /// log the event with the Gelaot Task ID
-    //     /// Here we just pass the function selector we are looking to execute
-    // }
-
     /*///////////////////////////////////////////////////////////////
                            Uniswap functions
     //////////////////////////////////////////////////////////////*/
