@@ -23,6 +23,7 @@ import Clmdashboard from "../components/clmdashboard";
 // import { useToast } from "@chakra-ui/react";
 
 const Clmmmanager = () => {
+  const [clmOrderId, setClmOrderId] = useState(0);
   const [token0Address, setToken0Address] = useState(WMATIC_Address);
   const [token1Address, setToken1Address] = useState(WETH_Address);
   const [amount0, setAmount0] = useState();
@@ -202,6 +203,7 @@ const Clmmmanager = () => {
       });
       console.log(transaction);
       setIsLoading(false);
+      setClmOrderId(2);
       // sendNotify("Order Created Successfully", tx);
     } catch (error) {
       console.log(error);
@@ -297,12 +299,12 @@ const Clmmmanager = () => {
                 onClick={() => createCLMOrder()}
                 className="bg-yellow-500 px-5 py-2 border border-white rounded-2xl text-black hover:scale-105 hover:bg-black hover:border-yellow-500 hover:text-white duration-200"
               >
-                {isLoading ? `creating an order ...` :  `Start an Order`}
+                {isLoading ? `creating an order ...` : `Start an Order`}
               </button>
             </div>
           </div>
         </div>
-        <Clmdashboard />
+        <Clmdashboard clmOrderId={clmOrderId} />
       </div>
     </div>
   );
