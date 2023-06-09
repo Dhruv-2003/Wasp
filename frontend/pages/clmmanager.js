@@ -18,6 +18,7 @@ import { parseEther, encodeAbiParameters, parseAbiParameters } from "viem";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
 import Image from "next/image";
+import Clmdashboard from "../components/clmdashboard";
 // import { Spinner } from "@chakra-ui/react";
 // import { useToast } from "@chakra-ui/react";
 
@@ -222,7 +223,7 @@ const Clmmmanager = () => {
                   <p className="text-white text-lg">Token 1</p>
                 </div>
                 <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
-                  <Image src={eth} className="h-6 w-6 rounded-full mr-2"/>
+                  <Image src={eth} className="h-6 w-6 rounded-full mr-2" />
                   <p className="text-black">WETH</p>
                 </div>
               </div>
@@ -231,7 +232,7 @@ const Clmmmanager = () => {
                   <p className="text-white text-lg">Token 2</p>
                 </div>
                 <div className="flex align-middle px-3 py-1 border border-yellow-500 rounded-xl mt-2 bg-white">
-                  <Image src={matic} className="h-6 w-6 rounded-full mr-2"/>
+                  <Image src={matic} className="h-6 w-6 rounded-full mr-2" />
                   <p className="text-black">Matic</p>
                 </div>
               </div>
@@ -275,7 +276,7 @@ const Clmmmanager = () => {
             <div className="mt-3 mx-3">
               <input
                 type="text"
-                placeholder="Amount of Link for Upkeep"
+                placeholder="Amount of Link for Upkeep &nbsp; (minumum : 0.02)"
                 className="w-full px-3 py-1 rounded-xl text-black"
                 onChange={(e) => setLinkAmount(e.target.value)}
               ></input>
@@ -286,7 +287,7 @@ const Clmmmanager = () => {
             <div className="mt-3 mx-3">
               <input
                 type="text"
-                placeholder=""
+                placeholder="to notify when link amount runs out"
                 className="w-full px-3 py-1 rounded-xl text-black"
                 onChange={(e) => setEmail(e.target.value)}
               ></input>
@@ -296,11 +297,12 @@ const Clmmmanager = () => {
                 onClick={() => createCLMOrder()}
                 className="bg-yellow-500 px-5 py-2 border border-white rounded-2xl text-black hover:scale-105 hover:bg-black hover:border-yellow-500 hover:text-white duration-200"
               >
-                Start an Order
+                {isLoading ? `creating an order ...` :  `Start an Order`}
               </button>
             </div>
           </div>
         </div>
+        <Clmdashboard />
       </div>
     </div>
   );

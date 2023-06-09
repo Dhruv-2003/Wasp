@@ -12,12 +12,13 @@ const Homepage = () => {
               <div className="w-full flex-col md:h-screen">
                 <div className="px-10 py-2 md:h-1/2 bg-yellow-500 rounded-2xl">
                   <div>
-                    <p className="text-black text-5xl">
+                    <div className="text-black text-5xl">
                       <span className="text-7xl mt-3">Automated</span> &nbsp; 
-                      <p className="mt-3">Asset &nbsp; <span className="text-6xl">Investment</span> &nbsp; Strategy <p className="mt-3">Platform</p></p>
+                      <p className="mt-3">Asset &nbsp; <span className="text-6xl">Investment</span> &nbsp; Strategy</p>
+                      <p className="mt-3">Platform</p>
                       <p className="mt-3">powered by </p>
                       <p className="mt-3 text-6xl text-blue-800">Chainlink , &nbsp;<span className="text-black text-3xl">Superfluid</span> &nbsp;<span className="text-black text-3xl">and &nbsp; Uniswap V3 .</span></p>
-                    </p>
+                    </div>
                   </div>
                 </div>
                 <div className="flex md:h-1/2 md:flex-row flex-col mt-3 w-full">
@@ -36,9 +37,9 @@ const Homepage = () => {
                   <p className="text-white text-5xl mt-2 tracking-wider">
                     <span className="text-yellow-500">Automating </span>Yield by Investing in <span className="text-yellow-500"> UniSwap v3.</span>
                   </p>
-                  <p className="text-2xl text-white mt-10 tracking-wider">Probably Ethereum's <span className="text-pink-500 text-3xl">First</span> </p>
+                  <p className="text-2xl text-white mt-10 tracking-wider">Probably Ethereum's <span className="text-yellow-500 text-3xl">First</span> </p>
                   <p className="text-4xl tracking-wider text-yellow-500 mt-2">Concentrated Liquidity Fully Automated Manager .</p>
-                  <p className="mt-7 text-2xl text-white tracking-wider">Our platform streamlines everything from <sapn className="text-yellow-500">investing</sapn> an asset to changing the price range to provide <span className="text-yellow-500 text-3xl">5 X Profit </span> than an AMM to withdrawing the profit and sending it to you, in <span className="text-yellow-500 text-3xl">just one simple click</span> using <span className="text-blue-500 text-4xl">ChainLink .</span></p>
+                  <p className="mt-7 text-2xl text-white tracking-wider">Our platform streamlines everything from <span className="text-yellow-500">investing</span> an asset to changing the price range to provide <span className="text-yellow-500 text-3xl">5 X Profit </span> than an AMM to withdrawing the profit and sending it to you, in <span className="text-yellow-500 text-3xl">just one simple click</span> using <span className="text-blue-500 text-4xl">ChainLink .</span></p>
                 </div>
               </div>
             </div>
