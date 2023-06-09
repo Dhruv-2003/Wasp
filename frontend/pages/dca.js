@@ -2,26 +2,32 @@ import React, { useState, useEffect } from "react";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
 import Image from "next/image";
-import { DCAMASTER_ABI, cfav1forwarder_ABI } from "../constants/abi";
+import { DCAMASTER_ABI, LINK_ABI, cfav1forwarder_ABI } from "../constants/abi";
 import {
   DCAMASTER_ADDRESS,
   CFAV1Forwarder_Address,
   WMATICx_Address,
+  WETH_Address,
+  LINK_Address,
 } from "../constants/contracts";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
-import { parseEther } from "viem";
+import { parseEther, encodeAbiParameters, parseAbiParameters } from "viem";
 
 const Dca = () => {
   const [flowRateUnit, setFlowRateUnit] = useState();
   const [timePeriodInput, setTimePeriodInput] = useState("");
-  //   const [tokens, setTokens] = useState(false);
+  // const [tokens, setTokens] = useState(false);
   //   const [selectIn, setSelectIn] = useState("Select a Token");
   //   const [selectInLogo, setSelectInLogo] = useState("");
   //   const [dropIn, setDropIn] = useState(false);
   //   const [selectOut, setSelectOut] = useState("Select a Token");
   //   const [selectOutLogo, setSelectOutLogo] = useState("");
   //   const [dropOut, setDropOut] = useState(false);
+  const [tokenIn, setTokenIn] = useState();
+  const [tokenOut, setTokenOut] = useState(WETH_Address);
+  const [linkAmount, setLinkAmount] = useState();
+  const [email, setEmail] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [frequency, setFrequency] = useState({
     day: 0,
@@ -30,7 +36,7 @@ const Dca = () => {
     sec: 0,
   });
   const [approved, setApproved] = useState(false);
-  const [superTokenAdd, setSuperTokenAdd] = useState();
+  const [superTokenAdd, setSuperTokenAdd] = useState(WMATICx_Address);
   const [flowRate, setFlowRate] = useState(); // converted into wei/sec
   const [totalTimePeriod, setTotalTimePeriod] = useState(); // converted into secs from start to end
   const [dcaFreq, setDcaFreq] = useState(); // converted into secs from hours and days
@@ -93,6 +99,37 @@ const Dca = () => {
     return totalTime;
   };
 
+  const approveLink = async () => {
+    try {
+      setIsLoading(true);
+      const amount = parseEther(linkAmount);
+      const { request } = await publicClient.simulateContract({
+        address: LINK_Address,
+        abi: LINK_ABI,
+        functionName: "approve",
+        account: address,
+        args: [DCAMASTER_ABI, amount],
+      });
+      console.log("Upgrading the asset");
+      const tx = await walletClient.writeContract(request);
+      console.log(tx);
+      // sendNotify("Operator Approval sent for confirmation ...", tx);
+      const transaction = await publicClient.waitForTransactionReceipt({
+        hash: tx,
+      });
+      console.log(transaction);
+      // sendNotify(
+      //   "Approval Commpleted Successfully, Now you can create stream",
+      //   tx
+      // );
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      console.log(error);
+      window.alert(error);
+    }
+  };
+
   const approveOperator = async () => {
     try {
       if (!flowRate) {
@@ -139,13 +176,32 @@ const Dca = () => {
         return;
       }
       setIsLoading(true);
-      console.log(superTokenAdd, tokenOut, flowRate, totalTime, dcaFreq);
+      const _linkAmount = parseEther(linkAmount);
+      const encryptedEmail = encodeAbiParameters(
+        parseAbiParameters("string email"),
+        [`${email}`]
+      );
+      console.log(
+        superTokenAdd,
+        tokenOut,
+        flowRate,
+        totalTime,
+        dcaFreq,
+        encryptedEmail
+      );
       const { request } = await publicClient.simulateContract({
         ...dcaf_contract,
         functionName: "createDCA",
-        args: [superTokenAdd, tokenOut, flowRate, totalTime, dcaFreq],
+        args: [
+          superTokenAdd,
+          tokenOut,
+          flowRate,
+          totalTime,
+          dcaFreq,
+          _linkAmount,
+          encryptedEmail,
+        ],
         account: address,
-        value: parseEther(gelatoFees),
       });
       const tx = await walletClient.writeContract(request);
       sendNotify("createDCAOrder sent for confirmation ..", tx);
@@ -287,11 +343,11 @@ const Dca = () => {
                     </div>
                   </div>
                   <div className="mt-6 flex flex-col">
-                    <p className="text-yellow-500 text-xl">Fees</p>
+                    <p className="text-yellow-500 text-xl">Fees in Link</p>
                     <input
                       type="number"
                       placeholder="0.0"
-                      onChange={(e) => setGelatoFees(e.target.value)}
+                      onChange={(e) => setLinkAmount(e.target.value)}
                       className="focus:border-green-500 px-2 py-1 rounded-xl w-full text-xl border-slate-300 mt-3"
                     ></input>
                   </div>
