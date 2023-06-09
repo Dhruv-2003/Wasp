@@ -41,7 +41,9 @@ const Clmdashboard = (props) => {
       setAmount1([formatEther(data[3])]);
       setAmount2([formatEther(data[4])]);
       setOrderId([data[6]]);
-      getPositionData(data[9]);
+      // getPositionData(data[9]);
+      // opensea : https://testnets.opensea.io/assets/mumbai/0xc36442b4a4522e871399cd717abdd847ab11fe88/data[6]
+      // taskId : https://automation.chain.link/mumbai/data[7]
       console.log(data);
     } catch (error) {
       console.log(error);
