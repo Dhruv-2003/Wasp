@@ -13,6 +13,7 @@ import {
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
 import { parseEther, encodeAbiParameters, parseAbiParameters } from "viem";
+import DCAdashboard from "../components/dcadashboard";
 
 const Dca = () => {
   const [flowRateUnit, setFlowRateUnit] = useState();
@@ -385,6 +386,7 @@ const Dca = () => {
                 </div>
               </div>
             </div>
+            <DCAdashboard />
           </div>
         </div>
       </div>

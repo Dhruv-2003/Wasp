@@ -10,7 +10,7 @@ const Navbar = () => {
             <p className="text-4xl text-yellow-500">WASP.</p>
           </div>
           <div>
-            <ConnectButton />
+            <ConnectButton showBalance={false} chainStatus="none"/>
           </div>
         </div>
       </div>
