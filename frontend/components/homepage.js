@@ -10,7 +10,7 @@ const Homepage = () => {
                     <div className="w-full flex-col md:h-screen">
                         <div className="px-10 py-2 md:h-1/2 bg-yellow-500 rounded-2xl">
                           <div>
-                            <p className="text-black">hello</p>
+                            <p className="text-black text-4xl">hello</p>
                           </div>
                         </div>
                         <div className="flex md:h-1/2 md:flex-row flex-col mt-3 w-full">

@@ -41,6 +41,23 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // - afterSwap() -  send the exchanged tokens to the user directly
 // - cancelDCATask() - after time period is over , it will cancel the task1 and the stream
 
+struct RegistrationParams {
+    string name;
+    bytes encryptedEmail;
+    address upkeepContract;
+    uint32 gasLimit;
+    address adminAddress;
+    bytes checkData;
+    bytes offchainConfig;
+    uint96 amount;
+}
+
+interface KeeperRegistrarInterface {
+    function registerUpkeep(
+        RegistrationParams calldata requestParams
+    ) external returns (uint256);
+}
+
 contract dCafProtocol is AutomateTaskCreator, Ownable {
     using SuperTokenV1Library for ISuperToken;
     ISwapRouter public immutable swapRouter;
@@ -82,11 +99,27 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     event dcaOrderCancelled(uint dcafOrderId);
     event dcaTask2Executed(uint dcafOrderId, uint timeStamp, address caller);
 
+    LinkTokenInterface public immutable i_link;
+    // address public immutable registrar;
+    AutomationRegistryInterface public immutable i_registry;
+    KeeperRegistrarInterface public immutable i_registrar;
+
+
     constructor(
         address payable _automate,
         address _fundsOwner,
-        address _swapRouter
-    ) AutomateTaskCreator(_automate, _fundsOwner) {
+        address _swapRouter, 
+        address _factory,
+        address _positionManager,
+        LinkTokenInterface _link,
+        KeeperRegistrarInterface _registrar,
+        AutomationRegistryInterface _registry
+    ) {
+        factory = _factory;
+        positionManager = _positionManager;
+        i_link = _link;
+        i_registrar = _registrar;
+        i_registry = _registry;
         swapRouter = ISwapRouter(_swapRouter);
         automateAddress = _automate;
     }
@@ -414,8 +447,37 @@ contract dCafProtocol is AutomateTaskCreator, Ownable {
     // updating stream permissions
 
     /*///////////////////////////////////////////////////////////////
-                           Gelato executions
+                           Chainlink Automation
     //////////////////////////////////////////////////////////////*/
+
+    function registerAndPredictID(
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        uint96 amount
+    ) public returns (uint256) {
+        RegistrationParams memory params = RegistrationParams({
+            name: name,
+            encryptedEmail: encryptedEmail,
+            upkeepContract: upkeepContract,
+            gasLimit: gasLimit,
+            adminAddress: adminAddress,
+            checkData: "0x",
+            offchainConfig: "0x",
+            amount: amount
+        });
+
+        i_link.approve(address(i_registrar), params.amount);
+        uint256 upkeepID = i_registrar.registerUpkeep(params);
+        if (upkeepID != 0) {
+            // DEV - Use the upkeepID however you see fit
+            return upkeepID;
+        } else {
+            revert("auto-approve disabled");
+        }
+    }
 
     function depositGelatoFees() external payable {
         _depositFunds(msg.value, ETH);

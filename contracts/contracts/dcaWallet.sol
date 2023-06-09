@@ -56,13 +56,11 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
     );
 
     constructor(
-        address payable _automate,
-        address _fundsOwner,
         address _swapRouter,
         address _manager,
         uint _dcafOrderId,
         dCafProtocol.DCAfOrder memory _order
-    ) AutomateTaskCreator(_automate, _fundsOwner) {
+    ) {
         swapRouter = ISwapRouter(_swapRouter);
         dcafManager = _manager;
         dcafOrderId = _dcafOrderId;
@@ -78,17 +76,17 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
                            Extras
     //////////////////////////////////////////////////////////////*/
 
-    function executeGelatoTask1() public {
-        // DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
-        require(dcafOrder.activeStatus, "Not Active");
-        require(
-            block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
-            "Freq time not passed"
-        );
-        emit dcaTask1Executed(msg.sender, block.timestamp);
-        // exectue beforeSwap
-        beforeSwap();
-    }
+    // function executeGelatoTask1() public {
+    //     // DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
+    //     require(dcafOrder.activeStatus, "Not Active");
+    //     require(
+    //         block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
+    //         "Freq time not passed"
+    //     );
+    //     emit dcaTask1Executed(msg.sender, block.timestamp);
+    //     // exectue beforeSwap
+    //     beforeSwap();
+    // }
 
     function beforeSwap() internal {
         // unwrap the token
@@ -163,11 +161,34 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
    function checkUpkeep(
         bytes calldata checkData
     ) external override returns (bool upkeepNeeded, bytes memory performData) {
-       
+       if(block.timestamp >= dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq){
+        return false;
+       }else{
+        return true;
+       }
+        performData = checkData;
     }
 
     function performUpkeep(bytes calldata performData) external override {
-        
+        require(dcafOrder.activeStatus, "Not Active");
+        require(
+            block.timestamp > dcafOrder.lastTradeTimeStamp + dcafOrder.dcafFreq,
+            "Freq time not passed"
+        );
+        emit dcaTask1Executed(msg.sender, block.timestamp);
+        // exectue beforeSwap
+        beforeSwap();
+    }
+
+    function createTask1(uint frequency) external onlyManager returns (bytes32 taskId){
+
+    } 
+
+    function createTask2(
+        uint _dcafOrderId,
+        uint timePeriod
+    ) external onlyManager returns (bytes32 taskId) {
+        // encode : abi.encodeCall(dCafProtocol.executeGelatoTask2, (_dCafOrderId))
     }
 
     /*///////////////////////////////////////////////////////////////

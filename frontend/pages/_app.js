@@ -5,6 +5,8 @@ import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { mainnet, polygon, optimism, arbitrum } from "wagmi/chains";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
+import localFont from "next/font/local";
+import Navbar from "../components/navbar";
 
 const { chains, publicClient } = configureChains(
   [mainnet, polygon, optimism, arbitrum],
@@ -22,12 +24,16 @@ const wagmiConfig = createConfig({
   connectors,
   publicClient,
 });
+const myFont = localFont({ src: "./CalSans-SemiBold.woff2" });
 
 function MyApp({ Component, pageProps }) {
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
+        <main className={myFont.className}>
+          <Navbar />
           <Component {...pageProps} />
+        </main>
       </RainbowKitProvider>
     </WagmiConfig>
   );
