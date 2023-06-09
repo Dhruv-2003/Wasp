@@ -80,7 +80,7 @@ contract WaspWallet is AutomationCompatibleInterface {
     }
 
     function performUpkeep(bytes calldata performData) external override {
-        require(_position.tokenId != 0);
+        require(_position.tokenId != 0,"TOKEN ID WRONG");
         decreaseLiquidity();
         collectAllFees();
         burnPosition();
