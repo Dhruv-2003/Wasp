@@ -101,7 +101,7 @@ const DCAdashboard = (props) => {
             <p className="text-yellow-500 text-2xl">Dashboard</p>
           </div>
           <div className="mt-10 w-9/12 border border-white px-3 py-2 rounded-xl">
-            <div className="w-full flex justify-evenly">
+            <div className="w-full flex flex-col justify-evenly">
               <div className="w-full flex justify-evenly">
                 <p className="text-yellow-500 text-xl">Order Id</p>
                 <p className="text-yellow-500 text-xl">Flow Rate</p>
@@ -120,7 +120,7 @@ const DCAdashboard = (props) => {
                   </div>
                   <div className="flex justify-center">
                     {flowRate.map((value, key) => {
-                      return <p className="text-white text-lg mt-5">{value}</p>;
+                      return <p className="text-white text-lg mt-5">{value.slice(0,-9)}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
@@ -137,14 +137,9 @@ const DCAdashboard = (props) => {
                     {wallet.map((value, key) => {
                       return (
                         <p className="text-white text-lg mt-5">
-                          {value.slice(0, 4)}..
+                          {value.slice(0,9)}...
                         </p>
                       );
-                    })}
-                  </div>
-                  <div className="flex justify-center">
-                    {wallet.map((value, key) => {
-                      return <p className="text-white text-lg mt-5">{value}</p>;
                     })}
                   </div>
                   <div className="flex justify-center">
