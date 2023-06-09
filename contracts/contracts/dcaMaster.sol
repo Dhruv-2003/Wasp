@@ -76,9 +76,7 @@ contract dCafProtocol is Ownable, AutomationCompatibleInterface {
         uint dcafOrderId,
         address dcaWallet,
         address creator,
-        address superToken,
-        uint256 task1Id,
-        uint256 task2Id
+        address superToken
     );
     event dcaOrderCancelled(uint dcafOrderId);
     event dcaTask2Executed(uint dcafOrderId, uint timeStamp, address caller);
@@ -180,29 +178,28 @@ contract dCafProtocol is Ownable, AutomationCompatibleInterface {
         // deposit fees for Gelato in wallet
 
         // Task 1 to exectue the dcafOrder on the freq in the wallet
-        uint256 task1Id = _wallet.createTask1(
+        {
+        _order.task1Id = _wallet.createTask1(
             dcafFreq,
             encryptedEmail,
             linkAmount
         );
-        _order.task1Id = task1Id;
+     
         // Task 2 to close the dcafOrder later in the wallet
-        uint256 task2Id = _wallet.createTask2(
+        _order.task2Id  = _wallet.createTask2(
             dcafOrderID,
             timePeriod,
             encryptedEmail,
             linkAmount
         );
-        _order.task2Id = task2Id;
+        }
         dcafOrders[dcafOrderID] = _order;
 
         emit dcaOrderCreated(
             dcafOrderID,
             address(_wallet),
             msg.sender,
-            superToken,
-            task1Id,
-            task2Id
+            superToken
         );
     }
 

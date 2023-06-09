@@ -6,6 +6,8 @@
 \_registrar= 0x57A4a13b35d25EE78e084168aBaC5ad360252467
 \_registry=0xE16Df59B887e3Caa439E0b29B42bA2e7976FD8b2
 
+\_swapRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564
+
 https://docs.chain.link/chainlink-automation/supported-networks/#configurations
 https://docs.chain.link/resources/link-token-contracts
 https://docs.uniswap.org/contracts/v3/reference/deployments
@@ -13,6 +15,9 @@ https://docs.uniswap.org/contracts/v3/reference/deployments
 waspMaster = 0xa65b24f6E36A057F2C588201f6CB7d4332e6F990
 0x986057F20e9AdD9b51Ea1591EC2DB957174F4C9e
 0x2eaA7c6a596dEaF8B4c59C8ab87b4776241413ce
+
+dcafMaster
+0xC83879B768A9c77AB566Fc3D00502B155C24F09D
 
 Final
 0x07d76Ea23376fa8C7671486C535B9407265250e6 (small changes)
@@ -34,3 +39,5 @@ LINK = 500000000000000000
 clm exchange - 0x255Daf3418530C2f05A75c1AF00C3a97fE0c14f1
 0xa8f8cd5D314f4e34cb5B5D553CAcB6a95bc4A7Cb
 0xb643f60636B872F6BEbD5c8B273c2980F95F83E7
+
+https://dashboard.tenderly.co/tx/mumbai/0x02a272dba7a8533a207eca24b1823bd0173e1bf5f19ae02a87ae19a53ec6bb05
