@@ -24,18 +24,18 @@ import "./dcaMaster.sol";
 // unwrap and Swap
 // pay for Gelato's task - so all the task will be created from this
 
-
 interface KeeperRegistrarInterface {
     struct RegistrationParams {
-    string name;
-    bytes encryptedEmail;
-    address upkeepContract;
-    uint32 gasLimit;
-    address adminAddress;
-    bytes checkData;
-    bytes offchainConfig;
-    uint96 amount;
+        string name;
+        bytes encryptedEmail;
+        address upkeepContract;
+        uint32 gasLimit;
+        address adminAddress;
+        bytes checkData;
+        bytes offchainConfig;
+        uint96 amount;
     }
+
     function registerUpkeep(
         RegistrationParams memory requestParams
     ) external returns (uint256);
@@ -206,17 +206,16 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
     function createTask1(
         uint frequency,
         bytes calldata encryptedEmail,
-        bytes calldata checkData,
         uint96 linkAmount
     ) external onlyManager returns (uint256 taskId) {
-        taskId = registerAndPredictID(
+      
+        taskId = registerAndPredictID1(
             "dcaTask1",
             encryptedEmail,
             address(this),
             999999,
             address(this),
-            linkAmount / 2,
-            checkData
+            linkAmount / 2
         );
         dcafOrder.task1Id = taskId;
     }
@@ -228,15 +227,14 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
         uint96 linkAmount
     ) external onlyManager returns (uint256 taskId) {
         // encode : abi.encodeCall(dCafProtocol.executeGelatoTask2, (_dCafOrderId))
-        bytes calldata checkData = abi.encode(_dcafOrderId);
-        taskId = registerAndPredictID(
+        taskId = registerAndPredictID2(
             "dcaTask2",
             encryptedEmail,
             address(dcafManager),
             999999,
             address(this),
             linkAmount / 2,
-            checkData
+            _dcafOrderId
         );
         dcafOrder.task2Id = taskId;
     }
@@ -245,25 +243,56 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
                            Chainlink Automation
     //////////////////////////////////////////////////////////////*/
 
-    function registerAndPredictID(
+    function registerAndPredictID1(
+        string memory name,
+        bytes calldata encryptedEmail,
+        address upkeepContract,
+        uint32 gasLimit,
+        address adminAddress,
+        uint96 amount
+    ) public returns (uint256) {
+        KeeperRegistrarInterface.RegistrationParams
+            memory params = KeeperRegistrarInterface.RegistrationParams({
+                name: name,
+                encryptedEmail: encryptedEmail,
+                upkeepContract: upkeepContract,
+                gasLimit: gasLimit,
+                adminAddress: adminAddress,
+                checkData: "0x",
+                offchainConfig: "0x",
+                amount: amount
+            });
+
+        i_link.approve(address(i_registrar), params.amount);
+        uint256 upkeepID = i_registrar.registerUpkeep(params);
+        if (upkeepID != 0) {
+            // DEV - Use the upkeepID however you see fit
+            return upkeepID;
+        } else {
+            revert("auto-approve disabled");
+        }
+    }
+
+    function registerAndPredictID2(
         string memory name,
         bytes calldata encryptedEmail,
         address upkeepContract,
         uint32 gasLimit,
         address adminAddress,
         uint96 amount,
-        bytes calldata checkData
+        uint dcafOrderId
     ) public returns (uint256) {
-        KeeperRegistrarInterface.RegistrationParams memory params = KeeperRegistrarInterface.RegistrationParams({
-            name: name,
-            encryptedEmail: encryptedEmail,
-            upkeepContract: upkeepContract,
-            gasLimit: gasLimit,
-            adminAddress: adminAddress,
-            checkData: checkData,
-            offchainConfig: "0x",
-            amount: amount
-        });
+        KeeperRegistrarInterface.RegistrationParams
+            memory params = KeeperRegistrarInterface.RegistrationParams({
+                name: name,
+                encryptedEmail: encryptedEmail,
+                upkeepContract: upkeepContract,
+                gasLimit: gasLimit,
+                adminAddress: adminAddress,
+                checkData: abi.encode(dcafOrderId),
+                offchainConfig: "0x",
+                amount: amount
+            });
 
         i_link.approve(address(i_registrar), params.amount);
         uint256 upkeepID = i_registrar.registerUpkeep(params);
