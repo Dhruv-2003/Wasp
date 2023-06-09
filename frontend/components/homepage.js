@@ -36,7 +36,7 @@ const Homepage = () => {
                   <p className="text-white text-5xl mt-2 tracking-wider">
                     <span className="text-yellow-500">Automating </span>Yield by Investing in <span className="text-yellow-500"> UniSwap v3.</span>
                   </p>
-                  <p className="text-2xl text-white mt-10 tracking-wider">Probably Ethereum's <span className="text-blue-500 text-3xl">First</span> </p>
+                  <p className="text-2xl text-white mt-10 tracking-wider">Probably Ethereum's <span className="text-pink-500 text-3xl">First</span> </p>
                   <p className="text-4xl tracking-wider text-yellow-500 mt-2">Concentrated Liquidity Fully Automated Manager .</p>
                   <p className="mt-7 text-2xl text-white tracking-wider">Our platform streamlines everything from <sapn className="text-yellow-500">investing</sapn> an asset to changing the price range to provide <span className="text-yellow-500 text-3xl">5 X Profit </span> than an AMM to withdrawing the profit and sending it to you, in <span className="text-yellow-500 text-3xl">just one simple click</span> using <span className="text-blue-500 text-4xl">ChainLink .</span></p>
                 </div>
