@@ -264,7 +264,7 @@ contract dCafProtocol is Ownable, AutomationCompatibleInterface {
     }
 
     function performUpkeep(bytes calldata performData) external override {
-        uint dcafOrderId = abi.decode(checkData, (uint));
+        uint dcafOrderId = abi.decode(performData, (uint));
         DCAfOrder memory _dcafOrder = dcafOrders[dcafOrderId];
         require(_dcafOrder.activeStatus, "Already Cancelled");
         require(

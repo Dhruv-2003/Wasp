@@ -24,7 +24,9 @@ import "./dcaMaster.sol";
 // unwrap and Swap
 // pay for Gelato's task - so all the task will be created from this
 
-struct RegistrationParams {
+
+interface KeeperRegistrarInterface {
+    struct RegistrationParams {
     string name;
     bytes encryptedEmail;
     address upkeepContract;
@@ -33,11 +35,9 @@ struct RegistrationParams {
     bytes checkData;
     bytes offchainConfig;
     uint96 amount;
-}
-
-interface KeeperRegistrarInterface {
+    }
     function registerUpkeep(
-        RegistrationParams calldata requestParams
+        RegistrationParams memory requestParams
     ) external returns (uint256);
 }
 
@@ -206,7 +206,8 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
     function createTask1(
         uint frequency,
         bytes calldata encryptedEmail,
-        uint linkAmount
+        bytes calldata checkData,
+        uint96 linkAmount
     ) external onlyManager returns (uint256 taskId) {
         taskId = registerAndPredictID(
             "dcaTask1",
@@ -215,7 +216,7 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
             999999,
             address(this),
             linkAmount / 2,
-            bytes("0x")
+            checkData
         );
         dcafOrder.task1Id = taskId;
     }
@@ -224,7 +225,7 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
         uint _dcafOrderId,
         uint timePeriod,
         bytes calldata encryptedEmail,
-        uint linkAmount
+        uint96 linkAmount
     ) external onlyManager returns (uint256 taskId) {
         // encode : abi.encodeCall(dCafProtocol.executeGelatoTask2, (_dCafOrderId))
         bytes calldata checkData = abi.encode(_dcafOrderId);
@@ -253,7 +254,7 @@ contract dcaWallet is Ownable, AutomationCompatibleInterface {
         uint96 amount,
         bytes calldata checkData
     ) public returns (uint256) {
-        RegistrationParams memory params = RegistrationParams({
+        KeeperRegistrarInterface.RegistrationParams memory params = KeeperRegistrarInterface.RegistrationParams({
             name: name,
             encryptedEmail: encryptedEmail,
             upkeepContract: upkeepContract,
