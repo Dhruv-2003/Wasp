@@ -67,28 +67,56 @@ const Clmdashboard = (props) => {
           <div>
             <p className="text-yellow-500 text-2xl">Dashboard</p>
           </div>
-          <div className="mt-10 w-1/2 border border-white px-3 py-2 rounded-xl">
-            <table className="w-full">
-              <tr className="w-full">
-                <th className="text-yellow-500 text-xl">Order Id</th>
-                <th className="text-yellow-500 text-xl">Token Pair</th>
-                <th className="text-yellow-500 text-xl">Amount 1</th>
-                <th className="text-yellow-500 text-xl">Amount 2</th>
-                <th className="text-yellow-500 text-xl">Wallet Address</th>
-              </tr>
-              <tr className="flex flex-col justify-center items-center">
+          <div className="mt-10 w-2/3 border border-white px-3 py-2 rounded-xl">
+            {/* <table className="w-full"> */}
+              <div className="w-full flex justify-evenly">
+                <p className="text-yellow-500 text-xl">Order Id</p>
+                <p className="text-yellow-500 text-xl">Token Pair</p>
+                <p className="text-yellow-500 text-xl">Amount 1</p>
+                <p className="text-yellow-500 text-xl">Amount 2</p>
+                <p className="text-yellow-500 text-xl">Wallet Address</p>
+                <p className="text-yellow-500 text-xl">Opensea NFT</p>
+              </div>
+              <div className="flex justify-evenly w-full">
+                <div className="flex justify-center">
                 {orderId.map((value, key) => {
+                  return (
+                      <p className="text-white text-lg mt-5">0</p>
+                  );
+                })}
+                </div>
+                <div  className="flex justify-center">
+                {tokenPair.map((value, key) => {
+                  return  <td><p className="text-white text-lg mt-5">{value}</p></td>;
+                })}
+                </div>
+                <div  className="flex justify-center">
+                {amount1.map((value, key) => {
+                  return <td><p className="text-white text-lg mt-5">{value}</p></td>;
+                })}
+                </div>
+                <div  className="flex justify-center">
+                {amount2.map((value, key) => {
                   return <p className="text-white text-lg mt-5">{value}</p>;
                 })}
-              </tr>
-              <tr className="flex flex-col justify-center items-center">
+                </div>
+                <div  className="flex justify-center">
+                {wallet.map((value, key) => {
+                  return <p className="text-white text-lg mt-5">{value.slice(0,9)}</p>;
+                })}
+                </div>
+                <div className="flex justify-center">
+                    
+                </div>
+              </div>
+              {/* <tr className="flex flex-col justify-center items-center">
                 {tokenPair.map((value, key) => {
-                  return <p className="text-white text-lg mt-5">{value}</p>;
+                  return  <td><p className="text-white text-lg mt-5">{value}</p></td>;
                 })}
               </tr>
               <tr className="flex flex-col justify-center items-center">
                 {amount1.map((value, key) => {
-                  return <p className="text-white text-lg mt-5">{value}</p>;
+                  return <td><p className="text-white text-lg mt-5">{value}</p></td>;
                 })}
               </tr>
               <tr className="flex flex-col justify-center items-center">
@@ -100,8 +128,8 @@ const Clmdashboard = (props) => {
                 {wallet.map((value, key) => {
                   return <p className="text-white text-lg mt-5">{value}</p>;
                 })}
-              </tr>
-            </table>
+              </tr> */}
+            {/* </table> */}
           </div>
         </div>
       </div>
