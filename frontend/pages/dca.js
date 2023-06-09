@@ -2,20 +2,20 @@ import React, { useState, useEffect } from "react";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
 import Image from "next/image";
-// import {
-//   cfav1forwarder_ABI,
-//   dcafProtocol_ABI,
-//   dcafWallet_ABI,
-//   wmatic_ABI,
-//   wmaticx_ABI,
-// } from "../constants/abi";
-// import {
-//   CFAV1Forwarder_Address,
-//   WETH_Address,
-//   WMATIC_Address,
-//   WMATICx_Address,
-//   dcafProtocol_Address,
-// } from "../constants/contracts";
+import {
+  cfav1forwarder_ABI,
+  dcafProtocol_ABI,
+  dcafWallet_ABI,
+  wmatic_ABI,
+  wmaticx_ABI,
+} from "../constants/abi";
+import {
+  CFAV1Forwarder_Address,
+  WETH_Address,
+  WMATIC_Address,
+  WMATICx_Address,
+  dcafProtocol_Address,
+} from "../constants/contracts";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
 import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
@@ -24,13 +24,13 @@ import { parseEther } from "viem";
 const Dca = () => {
   const [flowRateUnit, setFlowRateUnit] = useState();
   const [timePeriodInput, setTimePeriodInput] = useState("");
-  const [tokens, setTokens] = useState(false);
-  const [selectIn, setSelectIn] = useState("Select a Token");
-  const [selectInLogo, setSelectInLogo] = useState("");
-  const [dropIn, setDropIn] = useState(false);
-  const [selectOut, setSelectOut] = useState("Select a Token");
-  const [selectOutLogo, setSelectOutLogo] = useState("");
-  const [dropOut, setDropOut] = useState(false);
+//   const [tokens, setTokens] = useState(false);
+//   const [selectIn, setSelectIn] = useState("Select a Token");
+//   const [selectInLogo, setSelectInLogo] = useState("");
+//   const [dropIn, setDropIn] = useState(false);
+//   const [selectOut, setSelectOut] = useState("Select a Token");
+//   const [selectOutLogo, setSelectOutLogo] = useState("");
+//   const [dropOut, setDropOut] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [frequency, setFrequency] = useState({
     day: 0,
@@ -47,12 +47,12 @@ const Dca = () => {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const dcafProtocolContract = getContract({
-    address: dcafProtocol_Address,
-    abi: dcafProtocol_ABI,
-    publicClient,
-    walletClient,
-  });
+//   const dcafProtocolContract = getContract({
+//     address: dcafProtocol_Address,
+//     abi: dcafProtocol_ABI,
+//     publicClient,
+//     walletClient,
+//   });
 
   const dcaf_contract = {
     address: dcafProtocol_Address,
@@ -181,26 +181,22 @@ const Dca = () => {
   return (
     <div className="w-full">
       <div className="flex justify-center items-center mx-auto ">
-        <div className="mt-32">
+        <div className="mt-10">
           <div className="flex flex-col justify-center items-center mx-auto">
-            <div className="px-10 py-3 border border-zinc-300 rounded-xl shadow-xl">
-              <div className=" bg-green-200 text-green-700 px-2 py-0.5 rounded-xl">
-                <p>Send stream</p>
-              </div>
+            <div className="px-10 py-3 border-2 border-yellow-300 rounded-xl shadow-xl">
               <div className="flex flex-col justify-start">
-                <div className="mt-6">
-                  <p className="text-2xl">Flow rate</p>
+                <div className="mt-0">
+                  <p className="text-xl text-yellow-500">Flow rate</p>
                   <div className="flex mt-2 align-middle items-center">
                     <input
                       type="number"
                       placeholder="0.0"
                       onChange={(e) => handleFlowRate(e.target.value)}
-                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300"
+                      className="focus:border-green-500 px-2 py-1 w-full text-xl border-slate-300 rounded-xl"
                     ></input>
-                    <Select
-                      variant="filled"
+                    <select
                       placeholder=""
-                      className="px-1 mx-3"
+                      className="px-1 mx-3 py-2 bg-yellow-500 text-black rounded-xl"
                       onChange={(e) => setFlowRateUnit(e.target.value)}
                     >
                       <option value="sec">/seconds</option>
@@ -208,24 +204,24 @@ const Dca = () => {
                       <option value="hour">/hour</option>
                       <option value="days">/days</option>
                       <option value="months">/months</option>
-                    </Select>
+                    </select>
                   </div>
                   <div className="flex flex-col mt-6">
-                    <p className="text-2xl">Time Period</p>
+                    <p className="text-xl text-yellow-500">Time Period</p>
                     <input
-                      className="mt-3 text-xl"
+                      className="mt-3 text-xl px-2 py-1 rounded-xl"
                       type="datetime-local"
                       value={timePeriodInput}
                       onChange={(e) => setTimePeriodInput(e.target.value)}
                     ></input>
                   </div>
                   <div className="flex flex-col mt-6">
-                    <p className="text-2xl">DCA Frequency</p>
-                    <div className="flex align-middle items-center mt-2">
+                    <p className="text-xl text-yellow-500">DCA Frequency</p>
+                    <div className="flex align-middle items-center mt-4">
                       <input
                         type="number"
                         placeholder="0 days"
-                        className="w-28 px-2 text-xl"
+                        className="w-28 px-2 text-xl rounded-xl py-1"
                         // value={frequency.day}
                         onChange={(event) => {
                           setFrequency({
@@ -234,11 +230,11 @@ const Dca = () => {
                           });
                         }}
                       ></input>
-                      <p className="mx-2 text-xl">+</p>
+                      <p className="mx-2 text-xl text-yellow-500">+</p>
                       <input
                         type="number"
                         placeholder="0 hours"
-                        className="w-28 px-2 text-xl"
+                        className="w-28 px-2 text-xl rounded-xl py-1"
                         // value={frequency.hr}
                         onChange={(event) => {
                           setFrequency({
@@ -247,11 +243,11 @@ const Dca = () => {
                           });
                         }}
                       ></input>
-                      <p className="mx-2 text-xl">+</p>
+                      <p className="mx-2 text-xl text-yellow-500">+</p>
                       <input
                         type="number"
                         placeholder="0 minutes"
-                        className="w-28 px-2 text-xl"
+                        className="w-32 px-2 text-xl rounded-xl py-1"
                         // value={frequency.min}
                         onChange={(event) => {
                           setFrequency({
@@ -260,11 +256,11 @@ const Dca = () => {
                           });
                         }}
                       ></input>
-                      <p className="mx-2 text-xl">+</p>
+                      <p className="mx-2 text-xl text-yellow-500">+</p>
                       <input
                         type="number"
                         placeholder="0 seconds"
-                        className="w-28 px-2 text-xl"
+                        className="w-28 px-2 text-xl rounded-xl py-1"
                         // value={frequency.sec}
                         onChange={(event) => {
                           setFrequency({
@@ -273,41 +269,41 @@ const Dca = () => {
                           });
                         }}
                       ></input>
-                      <p className="mx-2 text-xl"></p>
+                      <p className="mx-2 text-xl text-yellow-500"></p>
                     </div>
                   </div>
                   <div className="mt-6 flex flex-col">
-                    <p className="text-black text-2xl">Gelato Fees</p>
+                    <p className="text-yellow-500 text-xl">Fees</p>
                     <input
                       type="number"
                       placeholder="0.0"
                       onChange={(e) => setGelatoFees(e.target.value)}
-                      className="focus:border-green-500 px-2 py-2 w-full text-2xl border-slate-300 mt-3"
+                      className="focus:border-green-500 px-2 py-1 rounded-xl w-full text-xl border-slate-300 mt-3"
                     ></input>
                   </div>
 
                   <div className="flex justify-between mt-10">
                     {isLoading ? (
                       <div className="flex justify-center items-center">
-                        <Spinner size={"lg"}></Spinner>
+                        {/* <Spinner size={"lg"}></Spinner> */}
                       </div>
                     ) : (
                       <>
                         <button
                           onClick={() => approveOperator()}
-                          className={`bg-blue-400 text-white px-10 py-3 rounded-xl text-lg ${
+                          className={`bg-yellow-500 text-black px-6 py-2 rounded-xl text-xl mb-5 ${
                             approved
                               ? `cursor-not-allowed`
-                              : `cursor-pointer hover:bg-white hover:text-blue-500 hover:border hover:border-blue-500 duration-200`
+                              : `cursor-pointer hover:bg-black hover:text-yellow-500 hover:border hover:border-yellow-500 duration-200`
                           }`}
                         >
                           Approve Stream
                         </button>
                         <button
                           onClick={() => createDCAOrder()}
-                          className={`bg-green-500 text-white px-10 py-3 rounded-xl text-lg  ${
+                          className={`bg-black text-yellow-500 border border-yellow-500 px-6 py-2 rounded-xl text-xl mb-5 ${
                             approved
-                              ? `hover:bg-white hover:text-green-500 hover:border hover:border-green-500 duration-200 cursor-pointer`
+                              ? `hover:bg-yellow-500 hover:text-black hover:border hover:border-yellow-500 duration-200 cursor-pointer`
                               : `cursor-not-allowed`
                           }`}
                         >
