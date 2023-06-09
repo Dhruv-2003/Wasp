@@ -23,7 +23,9 @@ const Homepage = () => {
                       <p className="mt-3">powered by </p>
                       <p className="mt-3 text-6xl text-blue-800">
                         Chainlink , &nbsp;
-                        <span className="text-black text-3xl">Superfluid</span>{" "}
+                        <span className="text-black text-3xl">
+                          Superfluid
+                        </span>{" "}
                         &nbsp;
                         <span className="text-black text-3xl">
                           and &nbsp; Uniswap V3 .
@@ -92,7 +94,7 @@ const Homepage = () => {
                     <span className="text-yellow-500"> UniSwap v3.</span>
                   </p>
                   {/* <p className="text-2xl text-white mt-10 tracking-wider">Probably Ethereum's <span className="text-yellow-500 text-3xl">First</span> </p> */}
-                  <p className="text-4xl tracking-wider text-yellow-500 mt-2">
+                  <p className="text-4xl tracking-wider text-yellow-500 mt-10">
                     Concentrated Liquidity Fully Automated Manager .
                   </p>
                   <p className="mt-7 text-2xl text-white tracking-wider">
