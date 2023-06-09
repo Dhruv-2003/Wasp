@@ -324,6 +324,484 @@ export const WASPMASTER_ABI = [
   },
 ];
 
+export const DCAMASTER_ABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_swapRouter",
+        type: "address",
+      },
+      {
+        internalType: "contract LinkTokenInterface",
+        name: "_link",
+        type: "address",
+      },
+      {
+        internalType: "contract KeeperRegistrarInterface",
+        name: "_registrar",
+        type: "address",
+      },
+      {
+        internalType: "contract AutomationRegistryInterface",
+        name: "_registry",
+        type: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    inputs: [],
+    name: "Unauthorized",
+    type: "error",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "OwnershipTransferred",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "dcafOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "dcaOrderCancelled",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "dcafOrderId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "dcaWallet",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "creator",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "superToken",
+        type: "address",
+      },
+    ],
+    name: "dcaOrderCreated",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "dcafOrderId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "timeStamp",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "address",
+        name: "caller",
+        type: "address",
+      },
+    ],
+    name: "dcaTask2Executed",
+    type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "dcafOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "cancelDCA",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes",
+        name: "checkData",
+        type: "bytes",
+      },
+    ],
+    name: "checkUpkeep",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "upkeepNeeded",
+        type: "bool",
+      },
+      {
+        internalType: "bytes",
+        name: "performData",
+        type: "bytes",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "superToken",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "tokenOut",
+        type: "address",
+      },
+      {
+        internalType: "int96",
+        name: "flowRate",
+        type: "int96",
+      },
+      {
+        internalType: "uint256",
+        name: "timePeriod",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "dcafFreq",
+        type: "uint256",
+      },
+      {
+        internalType: "uint96",
+        name: "linkAmount",
+        type: "uint96",
+      },
+      {
+        internalType: "bytes",
+        name: "encryptedEmail",
+        type: "bytes",
+      },
+    ],
+    name: "createDCA",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "dcafOrderID",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "dcafOrders",
+    outputs: [
+      {
+        internalType: "address",
+        name: "creator",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "wallet",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "tokenIn",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "superToken",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "tokenOut",
+        type: "address",
+      },
+      {
+        internalType: "int96",
+        name: "flowRate",
+        type: "int96",
+      },
+      {
+        internalType: "uint256",
+        name: "timePeriod",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "dcafFreq",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "lastTradeTimeStamp",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "creationTimeStamp",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "activeStatus",
+        type: "bool",
+      },
+      {
+        internalType: "uint256",
+        name: "task1Id",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "task2Id",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "i_link",
+    outputs: [
+      {
+        internalType: "contract LinkTokenInterface",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "i_registrar",
+    outputs: [
+      {
+        internalType: "contract KeeperRegistrarInterface",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "i_registry",
+    outputs: [
+      {
+        internalType: "contract AutomationRegistryInterface",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes",
+        name: "performData",
+        type: "bytes",
+      },
+    ],
+    name: "performUpkeep",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "poolFee",
+    outputs: [
+      {
+        internalType: "uint24",
+        name: "",
+        type: "uint24",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "dcafOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "refundDCA",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "renounceOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "swapRouter",
+    outputs: [
+      {
+        internalType: "contract ISwapRouter",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totaldcafOrders",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "superTokenAddress",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amountToUnwrap",
+        type: "uint256",
+      },
+    ],
+    name: "unwrapSuperTokenUser",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "dcafOrderId",
+        type: "uint256",
+      },
+    ],
+    name: "updateDCA",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "token",
+        type: "address",
+      },
+      {
+        internalType: "address",
+        name: "superTokenAddress",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "amountToWrap",
+        type: "uint256",
+      },
+    ],
+    name: "wrapSuperTokenUser",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
+
 export const WASPWALLET_ABI = [
   {
     inputs: [
@@ -1516,5 +1994,187 @@ export const LINK_ABI = [
     ],
     name: "Transfer",
     type: "event",
+  },
+];
+
+export const cfav1forwarder_ABI = [
+  {
+    inputs: [
+      { internalType: "contract ISuperfluid", name: "host", type: "address" },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  { inputs: [], name: "CFA_FWD_INVALID_FLOW_RATE", type: "error" },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+      { internalType: "bytes", name: "userData", type: "bytes" },
+    ],
+    name: "createFlow",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+      { internalType: "bytes", name: "userData", type: "bytes" },
+    ],
+    name: "deleteFlow",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "account", type: "address" },
+    ],
+    name: "getAccountFlowInfo",
+    outputs: [
+      { internalType: "uint256", name: "lastUpdated", type: "uint256" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+      { internalType: "uint256", name: "deposit", type: "uint256" },
+      { internalType: "uint256", name: "owedDeposit", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "account", type: "address" },
+    ],
+    name: "getAccountFlowrate",
+    outputs: [{ internalType: "int96", name: "flowrate", type: "int96" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+    ],
+    name: "getBufferAmountByFlowrate",
+    outputs: [
+      { internalType: "uint256", name: "bufferAmount", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+    ],
+    name: "getFlowInfo",
+    outputs: [
+      { internalType: "uint256", name: "lastUpdated", type: "uint256" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+      { internalType: "uint256", name: "deposit", type: "uint256" },
+      { internalType: "uint256", name: "owedDeposit", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "flowOperator", type: "address" },
+    ],
+    name: "getFlowOperatorPermissions",
+    outputs: [
+      { internalType: "uint8", name: "permissions", type: "uint8" },
+      { internalType: "int96", name: "flowrateAllowance", type: "int96" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+    ],
+    name: "getFlowrate",
+    outputs: [{ internalType: "int96", name: "flowrate", type: "int96" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "flowOperator", type: "address" },
+    ],
+    name: "grantPermissions",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "flowOperator", type: "address" },
+    ],
+    name: "revokePermissions",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+    ],
+    name: "setFlowrate",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+    ],
+    name: "setFlowrateFrom",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "sender", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+      { internalType: "int96", name: "flowrate", type: "int96" },
+      { internalType: "bytes", name: "userData", type: "bytes" },
+    ],
+    name: "updateFlow",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "contract ISuperToken", name: "token", type: "address" },
+      { internalType: "address", name: "flowOperator", type: "address" },
+      { internalType: "uint8", name: "permissions", type: "uint8" },
+      { internalType: "int96", name: "flowrateAllowance", type: "int96" },
+    ],
+    name: "updateFlowOperatorPermissions",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
   },
 ];

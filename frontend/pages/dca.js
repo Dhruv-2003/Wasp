@@ -2,23 +2,14 @@ import React, { useState, useEffect } from "react";
 import matic from "../public/polygon-token.svg";
 import eth from "../public/ethereum.svg";
 import Image from "next/image";
-// import {
-//   cfav1forwarder_ABI,
-//   dcafProtocol_ABI,
-//   dcafWallet_ABI,
-//   wmatic_ABI,
-//   wmaticx_ABI,
-// } from "../constants/abi";
-// import {
-//   CFAV1Forwarder_Address,
-//   WETH_Address,
-//   WMATIC_Address,
-//   WMATICx_Address,
-//   dcafProtocol_Address,
-// } from "../constants/contracts";
+import { DCAMASTER_ABI, cfav1forwarder_ABI } from "../constants/abi";
+import {
+  DCAMASTER_ADDRESS,
+  CFAV1Forwarder_Address,
+  WMATICx_Address,
+} from "../constants/contracts";
 import { useAccount, useWalletClient, usePublicClient } from "wagmi";
 import { getContract } from "wagmi/actions";
-import { Framework, SuperToken } from "@superfluid-finance/sdk-core";
 import { parseEther } from "viem";
 
 const Dca = () => {
@@ -47,16 +38,16 @@ const Dca = () => {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const dcafProtocolContract = getContract({
-    address: dcafProtocol_Address,
-    abi: dcafProtocol_ABI,
-    publicClient,
-    walletClient,
-  });
+  // const dcafProtocolContract = getContract({
+  //   address: dcafProtocol_Address,
+  //   abi: dcafProtocol_ABI,
+  //   publicClient,
+  //   walletClient,
+  // });
 
   const dcaf_contract = {
-    address: dcafProtocol_Address,
-    abi: dcafProtocol_ABI,
+    address: DCAMASTER_ADDRESS,
+    abi: DCAMASTER_ABI,
   };
 
   const handleFlowRate = (_flowRate) => {
@@ -121,20 +112,20 @@ const Dca = () => {
         abi: cfav1forwarder_ABI,
         functionName: "grantPermissions",
         account: address,
-        args: [WMATICx_Address, dcafProtocol_Address],
+        args: [WMATICx_Address, DCAMASTER_ADDRESS],
       });
       console.log("Upgrading the asset");
       const tx = await walletClient.writeContract(request);
       console.log(tx);
-      sendNotify("Operator Approval sent for confirmation ...", tx);
+      // sendNotify("Operator Approval sent for confirmation ...", tx);
       const transaction = await publicClient.waitForTransactionReceipt({
         hash: tx,
       });
       console.log(transaction);
-      sendNotify(
-        "Approval Commpleted Successfully, Now you can create stream",
-        tx
-      );
+      // sendNotify(
+      //   "Approval Commpleted Successfully, Now you can create stream",
+      //   tx
+      // );
       setApproved(true);
       setIsLoading(false);
     } catch (error) {
