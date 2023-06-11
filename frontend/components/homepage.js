@@ -114,9 +114,6 @@ const Homepage = () => {
                     using{" "}
                     <span className="text-blue-500 text-4xl">ChainLink .</span>
                   </p>
-                  {/* <p className="text-2xl text-white mt-10 tracking-wider">Probably Ethereum's <span className="text-yellow-500 text-3xl">First</span> </p> */}
-                  <p className="text-4xl tracking-wider text-yellow-500 mt-10">Concentrated Liquidity Fully Automated Manager .</p>
-                  <p className="mt-7 text-2xl text-white tracking-wider">Our platform streamlines everything from <span className="text-yellow-500">investing</span> an asset to changing the price range to provide <span className="text-yellow-500 text-3xl">5 X Profit </span> than an AMM to withdrawing the profit and sending it to you, in <span className="text-yellow-500 text-3xl">just one simple click</span> using <span className="text-blue-500 text-4xl">ChainLink .</span></p>
                 </div>
               </div>
             </div>
