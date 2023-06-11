@@ -9,6 +9,7 @@ import {
   formatEther,
 } from "viem";
 const Clmdashboard = (props) => {
+  const [orderData, setOrderData] = useState();
   const [orderId, setOrderId] = useState([]);
   const [tokenPair, setTokenPair] = useState([]);
   const [amount1, setAmount1] = useState([]);
@@ -25,10 +26,32 @@ const Clmdashboard = (props) => {
   };
 
   useEffect(() => {
-    if (props.clmOrderId != 0) {
-      getOrderData(props.clmOrderId);
-    }
+    getAllOrders();
   }, [props.clmOrderId]);
+
+  const getAllOrders = async () => {
+    try {
+      const data = await publicClient.readContract({
+        ...waspManager_Contract,
+        functionName: "totalCLMOrders",
+      });
+      // console.log(data);
+      if (!data) return;
+      const totalOrders = Number(data);
+      // console.log(totalOrders);
+      const promise = [];
+      for (let id = 1; id <= totalOrders; id++) {
+        const data = getOrderData(id);
+        promise.push(data);
+      }
+
+      const _orderData = await Promise.all(promise);
+      console.log(_orderData);
+      setOrderData(_orderData);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const getOrderData = async (clmOrderId) => {
     try {
@@ -37,32 +60,30 @@ const Clmdashboard = (props) => {
         functionName: "clmOrders",
         args: [clmOrderId],
       });
-      setTokenPair(["WMATIC / WETH"]);
-      setWallet([data[9]]);
-      setAmount1([formatEther(data[3])]);
-      setAmount2([formatEther(data[4])]);
-      setOrderId([data[6]]);
-      setTaskId([data[7]]);
+      // setTokenPair([...tokenPair, "WMATIC / WETH"]);
+      // setWallet([...wallet, data[9]]);
+      // setAmount1([...amount1, formatEther(data[3])]);
+      // setAmount2([...amount2, formatEther(data[4])]);
+      // setOrderId([...orderId, data[6]]);
+      // setTaskId([...taskId, data[7]]);
+      if (data[0] != address) return;
+      const order = {
+        tokenPair: "WMATIC/WETH",
+        wallet: data[9],
+        amount1: formatEther(data[3]),
+        amount2: formatEther(data[4]),
+        orderId: data[6],
+        taskId: data[7],
+      };
       //   getPositionData(data[9]);
       //   opensea : https://testnets.opensea.io/assets/mumbai/0xc36442b4a4522e871399cd717abdd847ab11fe88/data[6]
       //   taskId : https://automation.chain.link/mumbai/data[7]
-      console.log(data);
+      console.log(order);
+      return order;
     } catch (error) {
       console.log(error);
     }
   };
-  // const getPositionData = async (walletAddress) => {
-  //   try {
-  //     const data = await publicClient.readContract({
-  //       address: walletAddress,
-  //       abi: WASPMASTER_ABI,
-  //       functionName: "_position",
-  //     });
-  //     console.log(data);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
 
   return (
     <div className="w-screen">
@@ -83,9 +104,61 @@ const Clmdashboard = (props) => {
               <p className="text-yellow-500 text-xl">Task ID</p>
             </div>
             <div className="flex justify-evenly w-full">
-              <div className="flex justify-center">
+              {orderData &&
+                orderData.map((order, key) => {
+                  <>
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">{order.orderId}</p>
+                    </div>
+                    <div className="flex justify-center">
+                      <td>
+                        <p className="text-white text-lg mt-5">
+                          {order.tokenPair}
+                        </p>
+                      </td>
+                    </div>
+                    <div className="flex justify-center">
+                      <td>
+                        <p className="text-white text-lg mt-5">
+                          {order.amount1}
+                        </p>
+                      </td>
+                    </div>
+                    <div className="flex justify-center">
+                      <td>
+                        <p className="text-white text-lg mt-5">
+                          {order.amount2}
+                        </p>
+                      </td>
+                    </div>
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">
+                        {order.wallet.slice(0, 5)}...
+                      </p>
+                    </div>
+                    <div className="flex justify-center align-middle">
+                      <a
+                        className="text-white text-lg mt-5"
+                        target="_blank"
+                        href={`https://testnets.opensea.io/assets/mumbai/0xc36442b4a4522e871399cd717abdd847ab11fe88/${order.orderId}`}
+                      >
+                        NFT Link
+                      </a>
+                    </div>
+                    <div className="flex justify-center align-middle">
+                      <a
+                        className="text-white text-lg mt-5"
+                        target="_blank"
+                        href={` https://automation.chain.link/mumbai/${order.taskId}`}
+                      >
+                        Task ID
+                      </a>
+                    </div>
+                  </>;
+                })}
+              {/* <div className="flex justify-center">
                 {orderId.map((value, key) => {
-                  return <p className="text-white text-lg mt-5">0</p>;
+                  return <p className="text-white text-lg mt-5">{value}</p>;
                 })}
               </div>
               <div className="flex justify-center">
@@ -119,8 +192,8 @@ const Clmdashboard = (props) => {
                     </p>
                   );
                 })}
-              </div>
-              <div className="flex justify-center align-middle">
+              </div> */}
+              {/* <div className="flex justify-center align-middle">
                 <a
                   className="text-white text-lg mt-5"
                   target="_blank"
@@ -137,7 +210,7 @@ const Clmdashboard = (props) => {
                 >
                   Task ID
                 </a>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

@@ -64,16 +64,18 @@ const Homepage = () => {
                     </p>
                     <p className="mt-3 text-balck">
                       {" "}
-                      Range Orders is a strategy to reduce the impact of
-                      volatility by spreading out your assets over time so
-                      you're not buying shares at a high point for prices.
+                      Like traditional limit orders, range orders may be set
+                      with the expectation they will execute at some point in
+                      the future, with the target asset available for withdrawal
+                      after the spot price has crossed the full range of the
+                      order.
                     </p>
                     <p className="mt-1 text-black">
                       So with our one click solution
                     </p>
                     <p className="text-black text-2xl">
                       Don't have a <span className="text-yellow-500">FOMO</span>{" "}
-                      of buying assets on a higher price
+                      not selling assets at higher price
                     </p>
                     <p className=" text-black text-xl">
                       when your friends bought it a lower price .
