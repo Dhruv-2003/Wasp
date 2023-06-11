@@ -109,6 +109,7 @@ const Clmmmanager = () => {
       //   "Approval Commpleted Successfully, Now you can create stream",
       //   tx
       // );
+      setClmOrderId(2);
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);

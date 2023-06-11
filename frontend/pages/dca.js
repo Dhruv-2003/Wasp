@@ -213,6 +213,7 @@ const Dca = () => {
       });
       console.log(transaction);
       setIsLoading(false);
+      setDcaOrderId(2);
       // sendNotify("Order Created Successfully", tx);
     } catch (error) {
       console.log(error);
@@ -356,9 +357,16 @@ const Dca = () => {
 
                   <div className="flex justify-between mt-10">
                     {isLoading ? (
-                      <div className="flex justify-center items-center">
-                        {/* <Spinner size={"lg"}></Spinner> */}
-                      </div>
+                      <button
+                        onClick={() => approveOperator()}
+                        className={`bg-yellow-500 text-black px-6 py-2 rounded-xl text-xl mb-5 ${
+                          approved
+                            ? `cursor-not-allowed`
+                            : `cursor-pointer hover:bg-black hover:text-yellow-500 hover:border hover:border-yellow-500 duration-200`
+                        }`}
+                      >
+                        transaction in process...
+                      </button>
                     ) : (
                       <>
                         <button
