@@ -19,17 +19,20 @@ Range Orders - Range Orders also Called as Take Profit Order , where user suppli
 
 ## How we do it ?
 
-![original1](https://github.com/Dhruv-2003/Wasp/assets/90101251/6881957a-eba4-4620-81de-1498f79446a8)
-
 ![gallery](https://github.com/Dhruv-2003/Wasp/assets/90101251/1203e850-f639-499f-87ff-0b38ae32d9ec)
 
+![original1](https://github.com/Dhruv-2003/Wasp/assets/90101251/6881957a-eba4-4620-81de-1498f79446a8)
+
 ## Proof of Work
+
+### Chainlink Keepers
 
 - https://automation.chain.link/mumbai/70072275933714525338066929464497122156500835505307365954226997334847717613339
 
 - https://automation.chain.link/mumbai/106353928638207018011908931893881500921106363511169837306780326785538993882388
 
 - https://automation.chain.link/mumbai/23613719464977667282612666217469995405795351461594532250755437880023358842734
+
 
 ## Protocols Used
 
