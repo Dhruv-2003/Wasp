@@ -29,9 +29,7 @@ const DCAdashboard = (props) => {
   };
 
   useEffect(() => {
-    if (props.dcaOrderId != 0) {
-      getOrderData(props.dcaOrderId);
-    }
+    getAllOrders();
   }, [props.dcaOrderId]);
 
   const handleTimePeriod = (timePeriod, creationTime) => {
@@ -69,6 +67,30 @@ const DCAdashboard = (props) => {
     return time;
   }
 
+  const getAllOrders = async () => {
+    try {
+      const data = await publicClient.readContract({
+        ...dcaManager_Contract,
+        functionName: "totaldcafOrders",
+      });
+      // console.log(data);
+      if (!data) return;
+      const totalOrders = Number(data);
+      // console.log(totalOrders);
+      const promise = [];
+      for (let id = 1; id <= totalOrders; id++) {
+        const data = getOrderData(id);
+        promise.push(data);
+      }
+
+      const _orderData = await Promise.all(promise);
+      console.log(_orderData);
+      setDcaOrderData(_orderData);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const getOrderData = async (dcaOrderId) => {
     try {
       const data = await publicClient.readContract({
@@ -76,18 +98,29 @@ const DCAdashboard = (props) => {
         functionName: "dcafOrders",
         args: [dcaOrderId],
       });
-      setOrderId([]);
-      setFlowRate([formatEther(data[5])]);
-      setFreq([data[7].toString()]);
-      setEndAt([handleTimePeriod(parseInt(data[6]), parseInt(data[9]))]);
-      setWallet([data[1]]);
-      setTask1Id([data[11]]);
-      setTask2Id([data[12]]);
-      setDcaOrderData(true);
+      // setOrderId([]);
+      // setFlowRate([formatEther(data[5])]);
+      // setFreq([data[7].toString()]);
+      // setEndAt([handleTimePeriod(parseInt(data[6]), parseInt(data[9]))]);
+      // setWallet([data[1]]);
+      // setTask1Id([data[11]]);
+      // setTask2Id([data[12]]);
+      // setDcaOrderData(true);
+
+      const order = {
+        orderId: dcaOrderId,
+        flowRate: formatEther(data[5]),
+        freq: data[7].toString(),
+        endAt: handleTimePeriod(parseInt(data[6]), parseInt(data[9])),
+        wallet: data[1],
+        task1Id: data[11],
+        task2Id: data[12],
+      };
       // task1Id https://automation.chain.link/mumbai/data[11]
       // task2Id https://automation.chain.link/mumbai/data[12]
       // flowRate https://app.superfluid.finance/stream/polygon-mumbai/${data[0]}-${data.[1]}-${WMATICx_Address}-0.0
-      console.log(data);
+      // console.log(order);
+      return order;
     } catch (error) {
       console.log(error);
     }
@@ -111,57 +144,52 @@ const DCAdashboard = (props) => {
                 <p className="text-yellow-500 text-xl">Task 1 Id</p>
                 <p className="text-yellow-500 text-xl">Task 2 Id</p>
               </div>
-              {dcaOrderData && (
-                <div className="flex justify-evenly w-full">
-                  <div className="flex justify-center">
-                    {orderId.map((value, key) => {
-                      return <p className="text-white text-lg mt-5">{value}</p>;
-                    })}
-                  </div>
-                  <div className="flex justify-center">
-                    {flowRate.map((value, key) => {
-                      return <p className="text-white text-lg mt-5">{value.slice(0,-9)}</p>;
-                    })}
-                  </div>
-                  <div className="flex justify-center">
-                    {freq.map((value, key) => {
-                      return <p className="text-white text-lg mt-5">{value}</p>;
-                    })}
-                  </div>
-                  <div className="flex justify-center">
-                    {endAt.map((value, key) => {
-                      return <p className="text-white text-lg mt-5">{value}</p>;
-                    })}
-                  </div>
-                  <div className="flex justify-center">
-                    {wallet.map((value, key) => {
-                      return (
-                        <p className="text-white text-lg mt-5">
-                          {value.slice(0,9)}...
-                        </p>
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-center">
-                    <a
-                      className="text-white text-lg mt-5"
-                      target="_blank"
-                      href={`https://automation.chain.link/mumbai/${task1id}`}
-                    >
-                      Task 1 ID
-                    </a>
-                  </div>
-                  <div className="flex justify-center">
-                    <a
-                      className="text-white text-lg mt-5"
-                      target="_blank"
-                      href={`https://automation.chain.link/mumbai/${task2id}`}
-                    >
-                      Task 2 ID
-                    </a>
-                  </div>
-                </div>
-              )}
+              {dcaOrderData &&
+                dcaOrderData.map((dcaOrder, key) => {
+                  <div className="flex justify-evenly w-full">
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">
+                        {dcaOrder.orderId}
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">
+                        {dcaOrder.flowRate.slice(0, -9)}
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">{dcaOrder.freq}</p>
+                    </div>
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">
+                        {dcaOrder.endAt}
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <p className="text-white text-lg mt-5">
+                        {dcaOrder.wallet.slice(0, 9)}...
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <a
+                        className="text-white text-lg mt-5"
+                        target="_blank"
+                        href={`https://automation.chain.link/mumbai/${dcaOrder.task1Id}`}
+                      >
+                        Task 1 ID
+                      </a>
+                    </div>
+                    <div className="flex justify-center">
+                      <a
+                        className="text-white text-lg mt-5"
+                        target="_blank"
+                        href={`https://automation.chain.link/mumbai/${dcaOrder.task2id}`}
+                      >
+                        Task 2 ID
+                      </a>
+                    </div>
+                  </div>;
+                })}
             </div>
           </div>
         </div>
