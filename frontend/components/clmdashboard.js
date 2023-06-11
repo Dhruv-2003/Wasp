@@ -108,39 +108,39 @@ const Clmdashboard = (props) => {
                 orderData.map((order, key) => {
                   <>
                     <div className="flex justify-center">
-                      <p className="text-white text-lg mt-5">{order.orderId}</p>
+                      <p className="text-white text-lg mt-5">{orderId}</p>
                     </div>
                     <div className="flex justify-center">
                       <td>
                         <p className="text-white text-lg mt-5">
-                          {order.tokenPair}
+                          {tokenPair}
                         </p>
                       </td>
                     </div>
                     <div className="flex justify-center">
                       <td>
                         <p className="text-white text-lg mt-5">
-                          {order.amount1}
+                          {amount1}
                         </p>
                       </td>
                     </div>
                     <div className="flex justify-center">
                       <td>
                         <p className="text-white text-lg mt-5">
-                          {order.amount2}
+                          {amount2}
                         </p>
                       </td>
                     </div>
                     <div className="flex justify-center">
                       <p className="text-white text-lg mt-5">
-                        {order.wallet.slice(0, 5)}...
+                        {wallet.slice(0, 5)}...
                       </p>
                     </div>
                     <div className="flex justify-center align-middle">
                       <a
                         className="text-white text-lg mt-5"
                         target="_blank"
-                        href={`https://testnets.opensea.io/assets/mumbai/0xc36442b4a4522e871399cd717abdd847ab11fe88/${order.orderId}`}
+                        href={`https://testnets.opensea.io/assets/mumbai/0xc36442b4a4522e871399cd717abdd847ab11fe88/${orderId}`}
                       >
                         NFT Link
                       </a>
@@ -149,7 +149,7 @@ const Clmdashboard = (props) => {
                       <a
                         className="text-white text-lg mt-5"
                         target="_blank"
-                        href={` https://automation.chain.link/mumbai/${order.taskId}`}
+                        href={` https://automation.chain.link/mumbai/${taskId}`}
                       >
                         Task ID
                       </a>
