@@ -1,7 +1,12 @@
 # Wasp
 
 ## Introduction
-Automated Asset Investment Strategy Platform powered by Chainlink, Superfluid and Uniswap V3 .
+Automated Asset Investment Strategy Platform powered by Chainlink, Superfluid and Uniswap V3.
+
+Live Link : [waspinvest.vercel.app](https://waspinvest.vercel.app/)
+
+![Home Page](https://github.com/Dhruv-2003/Wasp/assets/91938348/320c033c-4fb2-45c7-ae32-857989e54c91)
+
 
 ## What we do ?
 We have created an Automated Asset Investment Strategy Platform powered by Chainlink , Uniswap V3 and Superfluid . There are 3 strategies majorly on our platform :-
@@ -44,3 +49,9 @@ Range Orders - Range Orders also Called as Take Profit Order , where user suppli
 
 - Dhruv Agarwal
 - Archit Sharma
+
+## 🔩 Project Structure
+
+
+- [contracts](https://github.com/Dhruv-2003/Wasp/contracts)
+- [frontend](https://github.com/Dhruv-2003/Wasp/frontend)
