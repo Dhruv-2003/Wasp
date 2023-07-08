@@ -7,6 +7,9 @@ import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import localFont from "next/font/local";
 import Navbar from "../components/navbar";
+import { R3vlProvider, createClient as r3vlCreateClient } from "@r3vl/sdk";
+
+const r3vlClient = r3vlCreateClient();
 
 const { chains, publicClient } = configureChains(
   [polygonMumbai],
@@ -33,10 +36,12 @@ function MyApp({ Component, pageProps }) {
   return (
     <WagmiConfig config={wagmiConfig}>
       <RainbowKitProvider chains={chains}>
-        <main className={myFont.className}>
-          <Navbar />
-          <Component {...pageProps} />
-        </main>
+        <R3vlProvider client={r3vlClient}>
+          <main className={myFont.className}>
+            <Navbar />
+            <Component {...pageProps} />
+          </main>
+        </R3vlProvider>
       </RainbowKitProvider>
     </WagmiConfig>
   );

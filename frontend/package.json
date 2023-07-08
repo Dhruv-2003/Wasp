@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@r3vl/sdk": "^0.0.35",
     "@rainbow-me/rainbowkit": "^1.0.1",
     "@superfluid-finance/sdk-core": "^0.6.6",
     "next": "13.4.4",
