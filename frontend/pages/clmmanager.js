@@ -305,7 +305,7 @@ const Clmmmanager = () => {
             </div>
           </div>
         </div>
-        <Clmdashboard clmOrderId={clmOrderId} />
+        {address && <Clmdashboard clmOrderId={clmOrderId} />}
       </div>
     </div>
   );
