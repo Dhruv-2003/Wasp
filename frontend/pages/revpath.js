@@ -126,12 +126,6 @@ function revpath() {
               handleDistributions={handleDistributions}
               //   tier={i}
             />
-            <button
-              // onClick={() => handleCreateRevenuePath()}
-              className="bg-yellow-500 px-5 py-2 border border-white rounded-2xl text-black hover:scale-105 hover:bg-black hover:border-yellow-500 hover:text-white duration-200"
-            >
-              + Add tier
-            </button>
             <div className="flex justify-center items-center mt-8 mb-2">
               <button
                 onClick={() => handleCreateRevenuePath()}
