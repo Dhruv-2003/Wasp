@@ -34,16 +34,16 @@ const myFont = localFont({ src: "./CalSans-SemiBold.woff2" });
 
 function MyApp({ Component, pageProps }) {
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider chains={chains}>
-        <R3vlProvider client={r3vlClient}>
+    <R3vlProvider client={r3vlClient}>
+      <WagmiConfig config={wagmiConfig}>
+        <RainbowKitProvider chains={chains}>
           <main className={myFont.className}>
             <Navbar />
             <Component {...pageProps} />
           </main>
-        </R3vlProvider>
-      </RainbowKitProvider>
-    </WagmiConfig>
+        </RainbowKitProvider>
+      </WagmiConfig>
+    </R3vlProvider>
   );
 }
 
