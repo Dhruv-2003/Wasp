@@ -41,7 +41,7 @@ function revpath() {
     signer: walletClient,
     initV2Final: true, // In case you want to create a "complex" Revenue Path with tiers
     initSimple: true, // For revenue paths with no additional tiers configuration
-    apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx",
+    apiKey: "YSuf7poj7AAH1cTGosm5WyWw2UI3lU",
     // Api key is required so SDK can store and access data related to Revenue Path configuration
   });
 
