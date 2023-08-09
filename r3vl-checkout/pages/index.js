@@ -30,28 +30,13 @@ export default function Home() {
     apiKey: "YSuf7poj7AAH1cTGosm5WyWw2UI3lU",
   });
 
-  const [walletAddresses, setWalletAddresses] = useState();
-  const [distrbutions, setDistrbutions] = useState();
-  const [tierLimits, setTierLimits] = useState();
   const [revPathAddress, setRevPathAddress] = useState(
     "0x3Fa84520d75A0d24C3dBa18EcD015cfC4C264Dff"
   ); // 0xb39704787045F957f675662d0066263D21c53FC5
   const [revPathName, setRevPathName] = useState("Investment");
   const [tokenAddress, setTokenAddress] = useState();
 
-  const handleWalletAddresses = (tier, walletIndex, walletAddress) => {
-    walletAddresses[tier][walletIndex] = walletAddress;
-
-    setWalletAddresses(walletAddresses);
-  };
-
-  const handleDistributions = (tier, distIndex, distribution) => {
-    distrbutions[tier][distIndex] = distribution;
-
-    setDistrbutions(distrbutions);
-  };
-
-  const handleCreateRevenuePath = async () => {
+  const handleCreateRevenuePath = async (_walletList, _distribution) => {
     const createArgs = {
       walletList: [["0xB72a04B01BB80DfD6a42ea8E0907B892286113F2"]],
       distribution: [[100]],
@@ -132,19 +117,7 @@ export default function Home() {
               </div>
               {/* Need to create a separate component , setting wallet , distrbutions , with different tiers */}
 
-              <TierPath
-                handleWalletAddresses={handleWalletAddresses}
-                handleDistributions={handleDistributions}
-                //   tier={i}
-              />
-              <div className="flex justify-center items-center mt-8 mb-2">
-                <button
-                  onClick={() => handleCreateRevenuePath()}
-                  className="bg-yellow-500 px-5 py-2 border border-white rounded-2xl text-black hover:scale-105 hover:bg-black hover:border-yellow-500 hover:text-white duration-200"
-                >
-                  create Path
-                </button>
-              </div>
+              <TierPath handleCreateRevenuePath={handleCreateRevenuePath} />
             </div>
           </div>
         </div>

@@ -5,6 +5,8 @@ const TierPath = (props) => {
     [{ walletAddress: "", amount: "" }],
   ]);
 
+  console.log(tierList);
+
   // handle click event of the Remove button
   const handleRemoveClick = (index) => {
     const list = [...tierList];
@@ -15,6 +17,25 @@ const TierPath = (props) => {
   // handle click event of the Add button
   const handleAddClick = () => {
     setTierList([...tierList, [{ walletAddress: "", amount: "" }]]);
+  };
+
+  const handleCreateRevenuePath = async () => {
+    /// wallet List
+    console.log(tierList);
+    const list = [...tierList];
+    let walletList = list;
+    let distributions = list;
+    await list.forEach(async (tierList, tier) => {
+      await tierList.forEach((walletData, index) => {
+        walletList[tier][index] = walletData.walletAddress;
+        distributions[tier][index] = walletData.amount;
+      });
+    });
+
+    // console.log(walletList);
+    // console.log(distributions);
+    /// distributions
+    // props.handleCreateRevenuePath()
   };
 
   return (
@@ -54,6 +75,14 @@ const TierPath = (props) => {
           </div>
         );
       })}
+      <div className="flex justify-center items-center mt-8 mb-2">
+        <button
+          onClick={() => handleCreateRevenuePath()}
+          className="bg-yellow-500 px-5 py-2 border border-white rounded-2xl text-black hover:scale-105 hover:bg-black hover:border-yellow-500 hover:text-white duration-200"
+        >
+          create Path
+        </button>
+      </div>
     </div>
   );
 };
@@ -64,6 +93,7 @@ const WalletData = (props) => {
   const handleInputChange = (e, index) => {
     const { name, value } = e.target;
     const list = [...props.tierList];
+    console.log(list);
     list[props.tier][index][name] = value;
     props.setTierList(list);
   };
